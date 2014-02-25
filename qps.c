@@ -1,0 +1,316 @@
+#define _POSIX_C_SOURCE 1
+#define _BSD_SOURCE 1
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <string.h>
+
+#include <torque/pbs_ifl.h>
+#include <torque/pbs_error.h>
+
+#include "operations.h"
+
+static struct config {
+    char  *filter;
+    char  *server;
+    char  *output;
+    char **outattr;
+    int    list;
+    int    xmllike;
+    int    json;
+} cfg;
+
+static char default_output[] = "name,owner,used,state,queue";
+
+// These attributes are taken from pbs_ifl.h
+// s/ATTR_\(.*\)/    (char *[]) { "\1", & },/g
+static char ***attributes = (char **[]) {
+    /* Attribute Names used by user commands */
+    (char *[]) { "a", ATTR_a },
+    (char *[]) { "e", ATTR_e },
+    (char *[]) { "f", ATTR_f },
+    (char *[]) { "g", ATTR_g },
+    (char *[]) { "h", ATTR_h },
+    (char *[]) { "j", ATTR_j },
+    (char *[]) { "k", ATTR_k },
+    (char *[]) { "l", ATTR_l },
+    (char *[]) { "m", ATTR_m },
+    (char *[]) { "o", ATTR_o },
+    (char *[]) { "p", ATTR_p },
+    (char *[]) { "q", ATTR_q },
+    (char *[]) { "r", ATTR_r },
+    (char *[]) { "t", ATTR_t },
+    (char *[]) { "array_id", ATTR_array_id },
+    (char *[]) { "u", ATTR_u },
+    (char *[]) { "v", ATTR_v },
+    (char *[]) { "A", ATTR_A },
+    (char *[]) { "args", ATTR_args },
+    (char *[]) { "M", ATTR_M },
+    (char *[]) { "N", ATTR_N },
+    (char *[]) { "S", ATTR_S },
+    (char *[]) { "depend", ATTR_depend },
+    (char *[]) { "inter", ATTR_inter },
+    (char *[]) { "stagein", ATTR_stagein },
+    (char *[]) { "stageout", ATTR_stageout },
+    (char *[]) { "jobtype", ATTR_jobtype },
+    (char *[]) { "submit_host", ATTR_submit_host },
+    (char *[]) { "init_work_dir", ATTR_init_work_dir },
+    /* additional job and general attribute names */
+    (char *[]) { "ctime", ATTR_ctime },
+    (char *[]) { "exechost", ATTR_exechost },
+    (char *[]) { "mtime", ATTR_mtime },
+    (char *[]) { "qtime", ATTR_qtime },
+    (char *[]) { "session", ATTR_session },
+    (char *[]) { "euser", ATTR_euser },
+    (char *[]) { "egroup", ATTR_egroup },
+    (char *[]) { "hashname", ATTR_hashname },
+    (char *[]) { "hopcount", ATTR_hopcount },
+    (char *[]) { "security", ATTR_security },
+    (char *[]) { "sched_hint", ATTR_sched_hint },
+    (char *[]) { "substate", ATTR_substate },
+    (char *[]) { "name", ATTR_name },
+    (char *[]) { "owner", ATTR_owner },
+    (char *[]) { "used", ATTR_used },
+    (char *[]) { "state", ATTR_state },
+    (char *[]) { "queue", ATTR_queue },
+    (char *[]) { "server", ATTR_server },
+    (char *[]) { "maxrun", ATTR_maxrun },
+    (char *[]) { "maxreport", ATTR_maxreport },
+    (char *[]) { "total", ATTR_total },
+    (char *[]) { "comment", ATTR_comment },
+    (char *[]) { "cookie", ATTR_cookie },
+    (char *[]) { "qrank", ATTR_qrank },
+    (char *[]) { "altid", ATTR_altid },
+    (char *[]) { "etime", ATTR_etime },
+    (char *[]) { "exitstat", ATTR_exitstat },
+    (char *[]) { "forwardx11", ATTR_forwardx11 },
+    (char *[]) { "submit_args", ATTR_submit_args },
+    (char *[]) { "tokens", ATTR_tokens },
+    (char *[]) { "netcounter", ATTR_netcounter },
+    (char *[]) { "umask", ATTR_umask },
+    (char *[]) { "start_time", ATTR_start_time },
+    (char *[]) { "start_count", ATTR_start_count },
+    (char *[]) { "checkpoint_dir", ATTR_checkpoint_dir },
+    (char *[]) { "checkpoint_name", ATTR_checkpoint_name },
+    (char *[]) { "checkpoint_time", ATTR_checkpoint_time },
+    (char *[]) { "checkpoint_restart_status", ATTR_checkpoint_restart_status },
+    (char *[]) { "restart_name", ATTR_restart_name },
+    (char *[]) { "comp_time", ATTR_comp_time },
+    (char *[]) { "reported", ATTR_reported },
+    (char *[]) { "intcmd", ATTR_intcmd },
+    (char *[]) { "P", ATTR_P },
+    (char *[]) { "exec_gpus", ATTR_exec_gpus },
+    (char *[]) { "J", ATTR_J },
+    (char *[]) { NULL, NULL },
+};
+
+char * get_attr (char *arg) {
+    for (size_t i = 0; attributes[i][0] != NULL; i++) {
+        if (strcmp(arg, attributes[i][0]) == 0) {
+            return attributes[i][1];
+        }
+    }
+    return NULL;
+}
+
+void list_attributes () {
+    for (size_t i = 0; attributes[i][0] != NULL; i++) {
+        printf("%s: %s\n", attributes[i][0], attributes[i][1]);
+    }
+}
+
+// Parse a comma seperated list and extract each token, then
+// look up the tokens in the list of Torque job attributes
+// and get the corresponding string
+char ** parse_show (char *str) {
+    if (str == NULL) {
+        return NULL;
+    }
+
+    // Copy the original string
+    char *args = strdup(str);
+    if (args == NULL) {
+        perror("malloc() failed");
+        exit(EXIT_FAILURE);
+    }
+
+    char **tokarray = NULL;
+
+    char *orig_args = args, *saveptr;
+    for (int j = 0; ; j++, args = NULL) {
+        char *token = strtok_r(args, ",", &saveptr);
+        if (token == NULL)
+            break;
+
+        char *f = get_attr(token);
+        if (f == NULL) {
+            fprintf(stderr, "Unknown attribute: %s\n", token);
+            exit(EXIT_FAILURE);
+        }
+
+        tokarray = realloc(tokarray, sizeof(char *) * (j+2));
+        tokarray[j] = f;
+        tokarray[j+1] = NULL;
+    }
+
+    free(orig_args);
+    return tokarray;
+}
+
+struct config * parse_opt (int argc, char **argv) {
+    int opt;
+
+    struct config *cfg = malloc(sizeof(struct config));
+    if (cfg == NULL) {
+        perror("malloc() failed");
+        exit(EXIT_FAILURE);
+    }
+    cfg->filter  = NULL;
+    cfg->server  = NULL;
+    cfg->output  = NULL;
+    cfg->outattr = NULL;
+    cfg->list    = 0;
+    cfg->xmllike = 0;
+    cfg->json    = 0;
+
+    while ((opt = getopt(argc, argv, "xjlf:s:o:")) != -1) {
+        switch (opt) {
+            case 'x':
+                cfg->xmllike = 1;
+                fprintf(stderr, "This doesn't do anything right now! It will output XML-like output in the future\n");
+                break;
+            case 'j':
+                cfg->json = 1;
+                fprintf(stderr, "This doesn't do anything right now! It will output JSON-like output in the future\n");
+                break;
+            case 'l':
+                cfg->list = 1;
+                break;
+            case 'f':
+                cfg->filter = optarg;
+                break;
+            case 's':
+                cfg->server = optarg;
+                break;
+            case 'o':
+                cfg->output = optarg;
+                break;
+            default: /* '?' */
+                fprintf(stderr, "Usage: %s [-s server] [-l] [-x] [-f attr1,attr2]\n", argv[0]);
+                exit(EXIT_FAILURE);
+        }
+    }
+
+    if (cfg->output == NULL)
+        cfg->output = default_output;
+    cfg->outattr = parse_show(cfg->output);
+    return cfg;
+}
+
+void print_attr (struct attrl *attr) {
+    struct attrl *new = attr;
+
+    while (new != NULL) {
+        printf(" %s", new->value);
+        new = new->next;
+    }
+}
+
+void print_bs (struct batch_status *cur) {
+    while (cur != NULL) {
+        printf("%s", cur->name);
+        print_attr(cur->attribs);
+        printf("\n");
+        cur = cur->next;
+    }
+}
+
+struct attrl *mk_attr() {
+    struct attrl *attr = malloc(sizeof(struct attrl));
+    if (attr == NULL)
+        return NULL;
+
+    attr->next = NULL;
+    attr->name = NULL;
+    attr->resource = NULL;
+    attr->value = NULL;
+    attr->op = 0;
+    return attr;
+}
+
+struct attrl *mk_attrl(char **attrlist) {
+    struct attrl *head = mk_attr();
+    if (head == NULL) {
+        perror("malloc() failed");
+        exit(EXIT_FAILURE);
+    }
+    struct attrl *tail = head;
+
+    if (attrlist == NULL) {
+        return NULL;
+    }
+
+    for (size_t i = 0; attrlist[i] != NULL; i++) {
+        tail->name = attrlist[i];
+        if (attrlist[i+1] != NULL) {
+            tail->next = mk_attr();
+            tail = tail->next;
+        }
+    }
+    return head;
+}
+
+void free_attrl(struct attrl *attr) {
+    struct attrl *head = attr;
+    do {
+        struct attrl *next = head->next;
+        free(head);
+        head = next;
+    } while (head != NULL);
+}
+
+void free_config (struct config *config) {
+    free(config->outattr);
+    free(config);
+}
+
+int main (int argc, char **argv) {
+    int exit_status = EXIT_SUCCESS;
+
+    struct config *cfg = parse_opt(argc, argv);
+    if (cfg->list) {
+        list_attributes();
+        goto END;
+    }
+
+    int handle = pbs_connect(cfg->server);
+    if (handle < 0) {
+        fprintf(stderr, "Couldn't connect to %s\n", cfg->server);
+        exit_status = EXIT_SUCCESS;
+        goto END;
+    }
+
+    struct attrl *attrs = mk_attrl(cfg->outattr);
+
+    char **jobs = pbs_selectjob(handle, NULL, "");
+    for (size_t i= 0; jobs[i] != NULL; i++) {
+        struct batch_status *bs = pbs_statjob(handle, jobs[i], attrs, "");
+
+        if (bs != NULL) {
+            print_bs(bs);
+            pbs_statfree(bs);
+        }
+    }
+    free(jobs);
+
+    if (attrs != NULL) {
+        free_attrl(attrs);
+    }
+
+    pbs_disconnect(handle);
+
+END:
+    free_config(cfg);
+    return EXIT_SUCCESS;
+}
