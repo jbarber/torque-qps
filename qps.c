@@ -9,7 +9,7 @@
 #include <torque/pbs_ifl.h>
 #include <torque/pbs_error.h>
 
-typedef enum { DEFAULT, XML, JSON } output;
+typedef enum { DEFAULT, XML, JSON, QSTAT } output;
 
 struct job {
     char  *name;
@@ -184,13 +184,16 @@ struct config * parse_opt (int argc, char **argv) {
     cfg->list     = 0;
     cfg->outstyle = DEFAULT;
 
-    while ((opt = getopt(argc, argv, "xjlf:s:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "qxjlf:s:o:")) != -1) {
         switch (opt) {
             case 'x':
                 cfg->outstyle = XML;
                 break;
             case 'j':
                 cfg->outstyle = JSON;
+                break;
+            case 'q':
+                cfg->outstyle = QSTAT;
                 break;
             case 'l':
                 cfg->list = 1;
@@ -406,6 +409,38 @@ void printjs (struct jobset *js) {
     }
 }
 
+void printjsasqstat (struct jobset *js) {
+    size_t id_width = 0;
+    size_t *widths = calloc(sizeof(size_t), js->nattr);
+
+    for (size_t i = 0; i < js->njobs; i++) {
+        size_t w = strlen(js->jobs[i].name);
+        if (w > id_width)
+            id_width = w;
+
+        for (size_t j = 0; j < js->nattr; j++) {
+            size_t s = 0;
+            if (js->jobs[i].attributes[j] != NULL)
+                s = strlen(js->jobs[i].attributes[j]);
+            if (s > widths[j])
+                widths[j] = s;
+        }
+    }
+
+    for (size_t i = 0; i < js->njobs; i++) {
+        printf("%-*s ", id_width, js->jobs[i]);
+
+        for (size_t j = 0; j < js->nattr; j++) {
+            char *out = "";
+            if (js->jobs[i].attributes[j] != NULL)
+                out = js->jobs[i].attributes[j];
+            printf("%-*s ", widths[j], out);
+        }
+        printf("\n");
+    }
+
+}
+
 void printjsasxml (struct jobset *js) {
     printf("<Data>");
 
@@ -415,7 +450,12 @@ void printjsasxml (struct jobset *js) {
             printf("<JobId>%s</JobId>", js->jobs[i].name);
 
             for (size_t j = 0; j < js->nattr; j++) {
-                printf("<%s>%s</%s>", js->attrs[j], js->jobs[i].attributes[j], js->attrs[j]);
+                if (js->jobs[i].attributes[j] != NULL) {
+                    printf("<%s>%s</%s>",
+                        js->attrs[j],
+                        js->jobs[i].attributes[j],
+                        js->attrs[j]);
+                }
             }
             printf("</Job>");
         }
@@ -434,11 +474,12 @@ void printjsasjson (struct jobset *js) {
         printf("\n");
 
         for (size_t j = 0; j < js->nattr; j++) {
-            if (js->jobs[i].attributes[j] != NULL)
+            if (js->jobs[i].attributes[j] != NULL) {
                 printf("    %s: '%s'", js->attrs[j], js->jobs[i].attributes[j]);
-            if (j + 1 < js->nattr)
-                printf(",");
-            printf("\n");
+                if (j + 1 < js->nattr)
+                    printf(",");
+                printf("\n");
+            }
         }
         printf("  }");
         if (i + 1 < js->njobs)
@@ -484,6 +525,9 @@ int main (int argc, char **argv) {
             break;
         case JSON:
             printjsasjson(jobset);
+            break;
+        case QSTAT:
+            printjsasqstat(jobset);
             break;
         default:
             printjs(jobset);
