@@ -9,7 +9,19 @@
 #include <torque/pbs_ifl.h>
 #include <torque/pbs_error.h>
 
-#include "operations.h"
+typedef enum { DEFAULT, XML, JSON } output;
+
+struct job {
+    char  *name;
+    char **attributes;
+};
+
+struct jobset {
+    size_t      nattr;
+    size_t      njobs;
+    char      **attrs;
+    struct job *jobs;
+};
 
 static struct config {
     char  *filter;
@@ -17,8 +29,7 @@ static struct config {
     char  *output;
     char **outattr;
     int    list;
-    int    xmllike;
-    int    json;
+    output outstyle;
 } cfg;
 
 static char default_output[] = "name,owner,used,state,queue";
@@ -166,23 +177,20 @@ struct config * parse_opt (int argc, char **argv) {
         perror("malloc() failed");
         exit(EXIT_FAILURE);
     }
-    cfg->filter  = NULL;
-    cfg->server  = NULL;
-    cfg->output  = NULL;
-    cfg->outattr = NULL;
-    cfg->list    = 0;
-    cfg->xmllike = 0;
-    cfg->json    = 0;
+    cfg->filter   = NULL;
+    cfg->server   = NULL;
+    cfg->output   = NULL;
+    cfg->outattr  = NULL;
+    cfg->list     = 0;
+    cfg->outstyle = DEFAULT;
 
     while ((opt = getopt(argc, argv, "xjlf:s:o:")) != -1) {
         switch (opt) {
             case 'x':
-                cfg->xmllike = 1;
-                fprintf(stderr, "This doesn't do anything right now! It will output XML-like output in the future\n");
+                cfg->outstyle = XML;
                 break;
             case 'j':
-                cfg->json = 1;
-                fprintf(stderr, "This doesn't do anything right now! It will output JSON-like output in the future\n");
+                cfg->outstyle = JSON;
                 break;
             case 'l':
                 cfg->list = 1;
@@ -197,7 +205,7 @@ struct config * parse_opt (int argc, char **argv) {
                 cfg->output = optarg;
                 break;
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-s server] [-l] [-x] [-f attr1,attr2]\n", argv[0]);
+                fprintf(stderr, "Usage: %s [-s server] [-l] [-j|-x] [-f attr1,attr2]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -275,6 +283,171 @@ void free_config (struct config *config) {
     free(config);
 }
 
+char * get_attr_from_attrl (struct attrl *attr, char *attribute) {
+    while (attr != NULL) {
+        if (strcmp(attr->name, attribute) == 0)
+            return attr->value;
+        attr = attr->next;
+    }
+    return NULL;
+}
+
+char ** attrl2char (struct attrl *attr, size_t *len) {
+    char **attributes = NULL;
+    while (attr != NULL) {
+        attributes = realloc(attributes, sizeof(char *) * (*len + 1));
+        if (attributes == NULL) {
+            perror("realloc() failed");
+            exit(EXIT_FAILURE);
+        }
+        attributes[*len] = strdup(attr->name);
+        (*len)++;
+        attr = attr->next;
+    }
+    return attributes;
+}
+
+// Append batch_status to a jobset.
+// All jobs in a jobset should have the same attributes.
+// The jobset must already have the attributes configured
+void addbs2js (struct batch_status *bs, struct jobset *js) {
+    size_t len = 0;
+    struct batch_status *cur = bs;
+    while (cur != NULL) {
+        len++;
+        cur = cur->next;
+    }
+
+    size_t i = js->njobs;
+    js->njobs += len;
+    js->jobs = realloc(js->jobs, sizeof(struct job) * js->njobs);
+    if (js->jobs == NULL) {
+        perror("realloc() failed");
+        exit(EXIT_FAILURE);
+    }
+
+    cur = bs;
+    while (cur != NULL) {
+        js->jobs[i].name = strdup(cur->name);
+        js->jobs[i].attributes = malloc(sizeof(char *) * js->nattr);
+
+        for (size_t j = 0; j < js->nattr; j++) {
+            char *attr = get_attr_from_attrl(cur->attribs, js->attrs[j]);
+            if (attr == NULL) {
+                js->jobs[i].attributes[j] = NULL;
+            }
+            else {
+                js->jobs[i].attributes[j] = strdup(attr);
+            }
+        }
+        i++;
+        cur = cur->next;
+    }
+}
+
+void freejs (struct jobset *js) {
+    for (size_t i = 0; i < js->njobs; i++) {
+        free(js->jobs[i].name);
+        for (size_t j = 0; j < js->nattr; j++) {
+            free(js->jobs[i].attributes[j]);
+        }
+        free(js->jobs[i].attributes);
+    }
+    free(js->jobs);
+
+    for (size_t j = 0; j < js->nattr; j++) {
+        free(js->attrs[j]);
+    }
+    free(js->attrs);
+}
+
+struct jobset * mkjs_attrl (struct attrl *attrl) {
+    struct jobset *js = malloc(sizeof(struct jobset));
+    if (js == NULL) {
+        perror("malloc() failed");
+        exit(EXIT_FAILURE);
+    }
+
+    js->njobs = 0;
+    js->jobs  = NULL;
+    js->nattr = 0;
+    js->attrs = attrl2char(attrl, &js->nattr);
+
+    return js;
+}
+
+struct jobset * mkjs (struct batch_status *bs) {
+    struct jobset *js = malloc(sizeof(struct jobset));
+    if (js == NULL) {
+        perror("malloc() failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (bs == NULL) {
+        exit(EXIT_FAILURE);
+    }
+
+    js->njobs = 0;
+    js->jobs  = NULL;
+    // Get the number of attributes from the first job
+    js->nattr = 0;
+    js->attrs = attrl2char(bs->attribs, &js->nattr);
+
+    return js;
+}
+
+void printjs (struct jobset *js) {
+    for (size_t i = 0; i < js->njobs; i++) {
+        printf("%s ", js->jobs[i].name);
+        for (size_t j = 0; j < js->nattr; j++) {
+            printf("%s ", js->jobs[i].attributes[j]);
+        }
+        printf("\n");
+    }
+}
+
+void printjsasxml (struct jobset *js) {
+    printf("<Data>");
+
+    if (js->njobs > 0) {
+        for (size_t i = 0; i < js->njobs; i++) {
+            printf("<Job>");
+            printf("<JobId>%s</JobId>", js->jobs[i].name);
+
+            for (size_t j = 0; j < js->nattr; j++) {
+                printf("<%s>%s</%s>", js->attrs[j], js->jobs[i].attributes[j], js->attrs[j]);
+            }
+            printf("</Job>");
+        }
+    }
+
+    printf("</Data>\n");
+}
+
+void printjsasjson (struct jobset *js) {
+    printf("{\n");
+    for (size_t i = 0; i < js->njobs; i++) {
+        printf("  {\n");
+        printf("    name: '%s'", js->jobs[i].name);
+        if (js->nattr)
+            printf(",");
+        printf("\n");
+
+        for (size_t j = 0; j < js->nattr; j++) {
+            if (js->jobs[i].attributes[j] != NULL)
+                printf("    %s: '%s'", js->attrs[j], js->jobs[i].attributes[j]);
+            if (j + 1 < js->nattr)
+                printf(",");
+            printf("\n");
+        }
+        printf("  }");
+        if (i + 1 < js->njobs)
+            printf(",");
+        printf("\n");
+    }
+    printf("}\n");
+}
+
 int main (int argc, char **argv) {
     int exit_status = EXIT_SUCCESS;
 
@@ -292,17 +465,32 @@ int main (int argc, char **argv) {
     }
 
     struct attrl *attrs = mk_attrl(cfg->outattr);
+    struct jobset *jobset = mkjs_attrl(attrs);
 
     char **jobs = pbs_selectjob(handle, NULL, "");
     for (size_t i= 0; jobs[i] != NULL; i++) {
         struct batch_status *bs = pbs_statjob(handle, jobs[i], attrs, "");
 
         if (bs != NULL) {
-            print_bs(bs);
+            addbs2js(bs, jobset);
             pbs_statfree(bs);
         }
     }
     free(jobs);
+
+    switch (cfg->outstyle) {
+        case XML:
+            printjsasxml(jobset);
+            break;
+        case JSON:
+            printjsasjson(jobset);
+            break;
+        default:
+            printjs(jobset);
+    }
+
+    freejs(jobset);
+    free(jobset);
 
     if (attrs != NULL) {
         free_attrl(attrs);
