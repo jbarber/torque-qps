@@ -9,19 +9,9 @@
 #include <torque/pbs_ifl.h>
 #include <torque/pbs_error.h>
 
+#include "util.h"
+
 typedef enum { DEFAULT, XML, JSON, QSTAT } output;
-
-struct job {
-    char  *name;
-    char **attributes;
-};
-
-struct jobset {
-    size_t      nattr;
-    size_t      njobs;
-    char      **attrs;
-    struct job *jobs;
-};
 
 static struct config {
     char  *filter;
@@ -477,7 +467,6 @@ void printjsasqstat (struct jobset *js) {
         }
         printf("\n");
     }
-
 }
 
 void printjsasxml (struct jobset *js) {
@@ -558,22 +547,27 @@ int main (int argc, char **argv) {
     }
     free(jobs);
 
+    //struct jobset *select = js_select(jobset, ATTR_owner, QPS_EQ, "jbarber@submit.grid.fe.up.pt");
+    struct jobset *select = jobset;
+
     switch (cfg->outstyle) {
         case XML:
-            printjsasxml(jobset);
+            printjsasxml(select);
             break;
         case JSON:
-            printjsasjson(jobset);
+            printjsasjson(select);
             break;
         case QSTAT:
-            printjsasqstat(jobset);
+            printjsasqstat(select);
             break;
         default:
-            printjs(jobset);
+            printjs(select);
     }
 
     freejs(jobset);
     free(jobset);
+    //free(select->jobs);
+    //free(select);
 
     if (attrs != NULL) {
         free_attrl(attrs);
