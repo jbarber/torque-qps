@@ -409,10 +409,27 @@ void printjs (struct jobset *js) {
     }
 }
 
+void printline (size_t len) {
+    for (size_t i = 0; i < len; i++)
+        printf("-");
+}
+
 void printjsasqstat (struct jobset *js) {
-    size_t id_width = 0;
+    char id[] = "Job id";
+    size_t id_width = strlen(id);
     size_t *widths = calloc(sizeof(size_t), js->nattr);
 
+    if (js->njobs == 0)
+        return;
+
+    // Column width for attribute names
+    for (size_t j = 0; j < js->nattr; j++) {
+        size_t w = strlen(js->attrs[j]);
+        if (w > widths[j])
+            widths[j] = w;
+    }
+
+    // Column width for job IDs and attributes
     for (size_t i = 0; i < js->njobs; i++) {
         size_t w = strlen(js->jobs[i].name);
         if (w > id_width)
@@ -427,6 +444,25 @@ void printjsasqstat (struct jobset *js) {
         }
     }
 
+    // Print header
+    int total_w = 0;
+    printf("%-*s ", id_width, id);
+    for (size_t j = 0; j < js->nattr; j++) {
+        printf("%-*s", widths[j], js->attrs[j]);
+        if (j + 1 < js->nattr)
+            printf(" ");
+    }
+    printf("\n");
+    printline(id_width);
+    printf(" ");
+    for (size_t j = 0; j < js->nattr; j++) {
+        printline(widths[j]);
+        if (j + 1 < js->nattr)
+            printf(" ");
+    }
+    printf("\n");
+
+    // Print info for each job
     for (size_t i = 0; i < js->njobs; i++) {
         printf("%-*s ", id_width, js->jobs[i]);
 
@@ -434,7 +470,10 @@ void printjsasqstat (struct jobset *js) {
             char *out = "";
             if (js->jobs[i].attributes[j] != NULL)
                 out = js->jobs[i].attributes[j];
-            printf("%-*s ", widths[j], out);
+            printf("%-*s", widths[j], out);
+
+            if (j + 1 < js->nattr)
+                printf(" ");
         }
         printf("\n");
     }
