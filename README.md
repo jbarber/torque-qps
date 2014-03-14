@@ -6,10 +6,10 @@ Shows the status of cluster jobs in a similar fashion to the way "ps" does for
 the system (hence "qps").
 
 Features are:
-  * Selectable job attributes - only show interesting information
-  * One-row per job output - make it easy to grep for relevent jobs
-  * JSON + XML output
-  * qstat-like output - but columns are sized to not truncate the data
+* Selectable job attributes - only show interesting information
+* One-row per job output - make it easy to grep for relevent jobs
+* JSON + XML output
+* qstat-like output - but columns are sized to not truncate the data
 
 USAGE
 =====
@@ -42,9 +42,9 @@ prerequisites simply run:
 TODO
 ====
 
-  * Filtering of jobs, e.g.:
-    * Show jobs from user "foo"
-    * Show jobs from all users apart from "foo"
-    * Show jobs from all users matching the pattern 'foo.*'
-    * Show jobs with a walltime of more than 10 hours
-  * Show status of queues and servers?
+* Filtering of jobs, e.g.:
+  * Show jobs from user "foo"
+  * Show jobs from all users apart from "foo"
+  * Show jobs from all users matching the pattern 'foo.*'
+  * Show jobs with a walltime of more than 10 hours
+* Show status of queues and servers?
