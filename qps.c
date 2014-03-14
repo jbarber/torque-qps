@@ -132,7 +132,7 @@ void show_help () {
     fprintf(stderr, "  j : output in JSON format\n");
     fprintf(stderr, "  x : output in XML format\n");
     fprintf(stderr, "  q : output in qstat 'format'\n");
-    fprintf(stderr, "  f : filter jobs\n");
+    fprintf(stderr, "  f : filter jobs (not yet implemented)\n");
     fprintf(stderr, "  o : job attributes to display\n");
 }
 
@@ -215,6 +215,7 @@ struct config * parse_opt (int argc, char **argv) {
                 break;
             case 'f':
                 cfg->filter = optarg;
+                fprintf(stderr, "WARNING: -f argument not yet implemented\n");
                 break;
             case 's':
                 cfg->server = optarg;
