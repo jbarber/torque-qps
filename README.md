@@ -14,18 +14,18 @@ Features are:
 USAGE
 =====
 
-  qps, version ...
-
-  usage: ./qps [-l] [-h] [-s server] [-j|-x|-q] [-f attr1,attr2] [-o attr1,attr2]
-
-    h : show help
-    l : list all available job attributes
-    s : server to connect to
-    j : output in JSON format
-    x : output in XML format
-    q : output in qstat 'format'
-    f : filter jobs (not yet implemented)
-    o : job attributes to display
+    qps, version ...
+     
+    usage: ./qps [-l] [-h] [-s server] [-j|-x|-q] [-f attr1,attr2] [-o attr1,attr2]
+    
+      h : show help
+      l : list all available job attributes
+      s : server to connect to
+      j : output in JSON format
+      x : output in XML format
+      q : output in qstat 'format'
+      f : filter jobs (not yet implemented)
+      o : job attributes to display
 
 BUILD INSTRUCTIONS
 ==================
@@ -37,7 +37,7 @@ available from your operating system packages (e.g. `torque-libs` and
 You also need a C compilar and the make utility. After you have these
 prerequisites simply run:
 
-  make
+    make
 
 TODO
 ====
