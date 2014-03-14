@@ -14,6 +14,7 @@
 typedef enum { DEFAULT, XML, JSON, QSTAT } output;
 
 static struct config {
+    int    help;
     char  *filter;
     char  *server;
     char  *output;
@@ -21,6 +22,8 @@ static struct config {
     int    list;
     output outstyle;
 } cfg;
+
+static char *progname;
 
 static char default_output[] = "name,owner,used,state,queue";
 
@@ -115,6 +118,24 @@ char * get_attr (char *arg) {
     return NULL;
 }
 
+void show_usage () {
+    fprintf(stderr, "usage: %s [-l] [-h] [-s server] [-j|-x|-q] [-f attr1,attr2] [-o attr1,attr2]\n", progname);
+}
+
+void show_help () {
+    fprintf(stderr, "qps, version %d\n\n", 0.1);
+    show_usage();
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  h : show help\n");
+    fprintf(stderr, "  l : list all available job attributes\n");
+    fprintf(stderr, "  s : server to connect to\n");
+    fprintf(stderr, "  j : output in JSON format\n");
+    fprintf(stderr, "  x : output in XML format\n");
+    fprintf(stderr, "  q : output in qstat 'format'\n");
+    fprintf(stderr, "  f : filter jobs\n");
+    fprintf(stderr, "  o : job attributes to display\n");
+}
+
 void list_attributes () {
     for (size_t i = 0; attributes[i][0] != NULL; i++) {
         printf("%s: %s\n", attributes[i][0], attributes[i][1]);
@@ -167,6 +188,7 @@ struct config * parse_opt (int argc, char **argv) {
         perror("malloc() failed");
         exit(EXIT_FAILURE);
     }
+    cfg->help     = 0;
     cfg->filter   = NULL;
     cfg->server   = NULL;
     cfg->output   = NULL;
@@ -174,8 +196,11 @@ struct config * parse_opt (int argc, char **argv) {
     cfg->list     = 0;
     cfg->outstyle = DEFAULT;
 
-    while ((opt = getopt(argc, argv, "qxjlf:s:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hqxjlf:s:o:")) != -1) {
         switch (opt) {
+            case 'h':
+                cfg->help = 1;
+                break;
             case 'x':
                 cfg->outstyle = XML;
                 break;
@@ -198,7 +223,7 @@ struct config * parse_opt (int argc, char **argv) {
                 cfg->output = optarg;
                 break;
             default: /* '?' */
-                fprintf(stderr, "Usage: %s [-s server] [-l] [-j|-x] [-f attr1,attr2]\n", argv[0]);
+                show_usage();
                 exit(EXIT_FAILURE);
         }
     }
@@ -518,9 +543,15 @@ void printjsasjson (struct jobset *js) {
 }
 
 int main (int argc, char **argv) {
+    progname = argv[0];
     int exit_status = EXIT_SUCCESS;
 
     struct config *cfg = parse_opt(argc, argv);
+    if (cfg->help) {
+        show_help();
+        goto END;
+    }
+
     if (cfg->list) {
         list_attributes();
         goto END;
