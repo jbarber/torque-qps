@@ -519,17 +519,22 @@ void printjsasxml (struct jobset *js) {
 }
 
 void printjsasjson (struct jobset *js) {
-    printf("{\n");
+    /* TODO:
+     * - Escape double quotes in names and values
+     * - Check if values are numeric and so shouldn't be quoted
+     * - Split some attribute values (e.g. exec_host) into arrays?
+     */
+    printf("[\n");
     for (size_t i = 0; i < js->njobs; i++) {
         printf("  {\n");
-        printf("    name: '%s'", js->jobs[i].name);
+        printf("    \"name\" : \"%s\"", js->jobs[i].name);
         if (js->nattr)
             printf(",");
         printf("\n");
 
         for (size_t j = 0; j < js->nattr; j++) {
             if (js->jobs[i].attributes[j] != NULL) {
-                printf("    %s: '%s'", js->attrs[j], js->jobs[i].attributes[j]);
+                printf("    \"%s\" : \"%s\"", js->attrs[j], js->jobs[i].attributes[j]);
                 if (j + 1 < js->nattr)
                     printf(",");
                 printf("\n");
@@ -540,7 +545,7 @@ void printjsasjson (struct jobset *js) {
             printf(",");
         printf("\n");
     }
-    printf("}\n");
+    printf("]\n");
 }
 
 int main (int argc, char **argv) {
