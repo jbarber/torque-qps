@@ -48,3 +48,7 @@ TODO
   * Show jobs from all users matching the pattern 'foo.*'
   * Show jobs with a walltime of more than 10 hours
 * Show status of queues and servers?
+* Output should be more attractive - for example, at the moment the interactive
+  field prints as (null) if it's not set to True by libtorque. This is not safe
+  and the (null) should be tested for and printed as "False"
+* JSON output should not quote non-string data types (e.g. true/false/numbers)
