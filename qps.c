@@ -123,7 +123,7 @@ void show_usage () {
 }
 
 void show_help () {
-    fprintf(stderr, "qps, version %d\n\n", 0.1);
+    fprintf(stderr, "qps, built from %s\n\n", VERSION);
     show_usage();
     fprintf(stderr, "\n");
     fprintf(stderr, "  h : show help\n");

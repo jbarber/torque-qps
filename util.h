@@ -1,3 +1,7 @@
+#ifndef VERSION
+#define VERSION "unknown git revision"
+#endif
+
 #ifndef UTIL_H
 #define UTIL_H
 
