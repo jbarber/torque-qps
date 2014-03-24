@@ -11,7 +11,7 @@
 
 #include "util.h"
 
-typedef enum { DEFAULT, XML, JSON, QSTAT } output;
+typedef enum { DEFAULT, XML, JSON, QSTAT, PERL } output;
 
 static struct config {
     int    help;
@@ -119,7 +119,7 @@ char * get_attr (char *arg) {
 }
 
 void show_usage () {
-    fprintf(stderr, "usage: %s [-l] [-h] [-s server] [-j|-x|-q] [-f attr1,attr2] [-o attr1,attr2]\n", progname);
+    fprintf(stderr, "usage: %s [-l] [-h] [-s server] [-j|-x|-q|-p] [-f attr1,attr2] [-o attr1,attr2]\n", progname);
 }
 
 void show_help () {
@@ -131,6 +131,7 @@ void show_help () {
     fprintf(stderr, "  s : server to connect to\n");
     fprintf(stderr, "  j : output in JSON format\n");
     fprintf(stderr, "  x : output in XML format\n");
+    fprintf(stderr, "  p : output in Perl format\n");
     fprintf(stderr, "  q : output in qstat 'format'\n");
     fprintf(stderr, "  f : filter jobs (not yet implemented)\n");
     fprintf(stderr, "  o : job attributes to display\n");
@@ -196,7 +197,7 @@ struct config * parse_opt (int argc, char **argv) {
     cfg->list     = 0;
     cfg->outstyle = DEFAULT;
 
-    while ((opt = getopt(argc, argv, "hqxjlf:s:o:")) != -1) {
+    while ((opt = getopt(argc, argv, "hqxjplf:s:o:")) != -1) {
         switch (opt) {
             case 'h':
                 cfg->help = 1;
@@ -206,6 +207,9 @@ struct config * parse_opt (int argc, char **argv) {
                 break;
             case 'j':
                 cfg->outstyle = JSON;
+                break;
+            case 'p':
+                cfg->outstyle = PERL;
                 break;
             case 'q':
                 cfg->outstyle = QSTAT;
@@ -518,23 +522,24 @@ void printjsasxml (struct jobset *js) {
     printf("</Data>\n");
 }
 
-void printjsasjson (struct jobset *js) {
+void printjsasjson (struct jobset *js, char *sep) {
     /* TODO:
      * - Escape double quotes in names and values
-     * - Check if values are numeric and so shouldn't be quoted
+     * - Check if values are numeric/boolean and so shouldn't be quoted - can't
+     *   do this for perl output
      * - Split some attribute values (e.g. exec_host) into arrays?
      */
     printf("[\n");
     for (size_t i = 0; i < js->njobs; i++) {
         printf("  {\n");
-        printf("    \"name\" : \"%s\"", js->jobs[i].name);
+        printf("    \"name\" %s \"%s\"", sep, js->jobs[i].name);
         if (js->nattr)
             printf(",");
         printf("\n");
 
         for (size_t j = 0; j < js->nattr; j++) {
             if (js->jobs[i].attributes[j] != NULL) {
-                printf("    \"%s\" : \"%s\"", js->attrs[j], js->jobs[i].attributes[j]);
+                printf("    \"%s\" %s \"%s\"", js->attrs[j], sep, js->jobs[i].attributes[j]);
                 if (j + 1 < js->nattr)
                     printf(",");
                 printf("\n");
@@ -592,7 +597,10 @@ int main (int argc, char **argv) {
             printjsasxml(select);
             break;
         case JSON:
-            printjsasjson(select);
+            printjsasjson(select, ":");
+            break;
+        case PERL:
+            printjsasjson(select, "=>");
             break;
         case QSTAT:
             printjsasqstat(select);
