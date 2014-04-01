@@ -1,0 +1,59 @@
+=head1 NAME
+
+qps
+
+=head1 SYNOPSIS
+
+B<qps> [B<-l>] [B<-h>] [B<-s> server] [B<-j>|B<-x>|B<-q>|B<-p>] [B<-f> attr1,attr2] [B<-o> attr1,attr2]
+
+=head1 DESCRIPTION
+
+A "better" qstat.
+
+=head1 OPTIONS
+
+=over
+
+=item B<-h>
+
+Show help
+
+=item B<-l>
+
+List all available job attributes
+
+=item B<-s>
+
+Torque server to connect to
+
+=item B<-j>
+
+Output in JSON format.
+
+=item B<-x>
+
+Output in XML format.
+
+=item B<-p>
+
+Output in Perl format
+
+=item B<-q>
+
+Output in qstat 'format'.
+
+=item B<-o>
+
+Job attributes to display, valid values are listed by the B<-l> option.
+
+=back
+
+=head1 SEE ALSO
+
+L<qstat|http://docs.adaptivecomputing.com/torque/4-2-6/help.htm#topics/commands/qstat.htm> from the Torque resource manager.
+
+=head1 AUTHOR
+
+Jonathan Barber - <jonathan.barber@gmail.com>
+
+=cut
