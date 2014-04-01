@@ -23,6 +23,7 @@ USAGE
       s : server to connect to
       j : output in JSON format
       x : output in XML format
+      p : output in Perl format
       q : output in qstat 'format'
       f : filter jobs (not yet implemented)
       o : job attributes to display
