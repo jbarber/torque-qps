@@ -20,5 +20,6 @@ struct jobset {
 };
 
 struct jobset * js_select(struct jobset *, char *, symbol, char *);
+int hms2s (char *hms);
 
 #endif

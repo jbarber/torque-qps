@@ -1,9 +1,39 @@
+#define _BSD_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "util.h"
 
 typedef enum { MATCH, NOMATCH, NOHIT } cmp_res;
+
+/* Parse string of form hh:mm:ss into seconds
+ * Currently dies if the string isn't in the correct format, but it should
+ * handle this more gracefully
+ */
+int hms2s (char *ohms) {
+    int seconds;
+    char *chms = strdup(ohms);
+    char *orig = chms;
+    char *hms[3];
+    size_t i = 0;
+
+    while ((hms[i++] = strsep(&chms, ":")) != NULL) {
+        if (i > 3) {
+            seconds = -1;
+            fprintf(stderr, "Too many fields in hour:minute:seconds string '%s'\n", ohms);
+            exit(EXIT_FAILURE);
+        }
+    }
+    if (i != 4) {
+        seconds = -1;
+        fprintf(stderr, "Not enough fields in hour:minute:second string '%s'\n", ohms);
+        exit(EXIT_FAILURE);
+    }
+
+    seconds = ((atoi(hms[0]) * 60) + atoi(hms[1])) * 60 + atoi(hms[2]);
+    free(orig);
+    return seconds;
+}
 
 int cmp (char *lhs, symbol op, char *rhs) {
     switch (op) {
