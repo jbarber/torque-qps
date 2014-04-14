@@ -32,3 +32,6 @@ srpm: ${TARBALL}
 install: qps qps.1
 	install -m755 qps ${DESTDIR}/usr/bin
 	install -m644 qps.1 ${DESTDIR}/usr/share/man/man1
+
+test:
+	true
