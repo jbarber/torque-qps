@@ -6,8 +6,8 @@
 #include <getopt.h>
 #include <string.h>
 
-#include <torque/pbs_ifl.h>
-#include <torque/pbs_error.h>
+#include <pbs_ifl.h>
+#include <pbs_error.h>
 
 #include "util.h"
 
