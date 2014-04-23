@@ -16,7 +16,7 @@ USAGE
 
     qps, version ...
      
-    usage: ./qps [-l] [-h] [-s server] [-j|-x|-q] [-f attr1,attr2] [-o attr1,attr2]
+    usage: ./qps [-l] [-h] [-s server] [-j|-x|-q] [-f attr1=value1|[-f attr2=value2|...]] [-o attr1,attr2]
     
       h : show help
       l : list all available job attributes
@@ -25,8 +25,27 @@ USAGE
       x : output in XML format
       p : output in Perl format
       q : output in qstat 'format'
-      f : filter jobs (not yet implemented)
+      f : filter jobs
       o : job attributes to display
+
+
+FILTERS
+=======
+
+Multiple filters can be specified as attribute=value pairs, the attributes are
+equal to those listed by the -l option. Multiple filters are AND'd together to
+return the union of jobs matching the filter. At the moment only the equality
+comparison is permitted. For example, the following:
+
+    qps -f name=FOO -f owner=jbarber@example.com
+
+returns all jobs owned by the user `jbarber@example.com` and called `FOO`.
+
+Not all attributes are allowed to be queried by all users and will cause an
+error. For example:
+
+    qps -f name=FOO -f owner=jbarber@example.com -f euser=jbarber
+    Unauthorized Request  euser
 
 BUILD INSTRUCTIONS
 ==================

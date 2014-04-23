@@ -10,12 +10,13 @@
 #include <pbs_error.h>
 
 #include "util.h"
+#include "filter.h"
 
 typedef enum { DEFAULT, XML, JSON, QSTAT, PERL } output;
 
 static struct config {
     int    help;
-    char  *filter;
+    struct filter *filters;
     char  *server;
     char  *output;
     char **outattr;
@@ -109,17 +110,8 @@ static char ***attributes = (char **[]) {
     (char *[]) { NULL, NULL },
 };
 
-char * get_attr (char *arg) {
-    for (size_t i = 0; attributes[i][0] != NULL; i++) {
-        if (strcmp(arg, attributes[i][0]) == 0) {
-            return attributes[i][1];
-        }
-    }
-    return NULL;
-}
-
 void show_usage () {
-    fprintf(stderr, "usage: %s [-l] [-h] [-s server] [-j|-x|-q|-p] [-f attr1,attr2] [-o attr1,attr2]\n", progname);
+    fprintf(stderr, "usage: %s [-l] [-h] [-s server] [-j|-x|-q|-p] [-f attr1=value1|[-f attr2=value2]] [-o attr1,attr2]\n", progname);
 }
 
 void show_help () {
@@ -133,7 +125,7 @@ void show_help () {
     fprintf(stderr, "  x : output in XML format\n");
     fprintf(stderr, "  p : output in Perl format\n");
     fprintf(stderr, "  q : output in qstat 'format'\n");
-    fprintf(stderr, "  f : filter jobs (not yet implemented)\n");
+    fprintf(stderr, "  f : filter jobs\n");
     fprintf(stderr, "  o : job attributes to display\n");
 }
 
@@ -166,7 +158,7 @@ char ** parse_show (char *str) {
         if (token == NULL)
             break;
 
-        char *f = get_attr(token);
+        char *f = get_attr(token, attributes);
         if (f == NULL) {
             fprintf(stderr, "Unknown attribute: %s\n", token);
             exit(EXIT_FAILURE);
@@ -190,7 +182,7 @@ struct config * parse_opt (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
     cfg->help     = 0;
-    cfg->filter   = NULL;
+    cfg->filters  = NULL;
     cfg->server   = NULL;
     cfg->output   = NULL;
     cfg->outattr  = NULL;
@@ -198,6 +190,7 @@ struct config * parse_opt (int argc, char **argv) {
     cfg->outstyle = DEFAULT;
 
     while ((opt = getopt(argc, argv, "hqxjplf:s:o:")) != -1) {
+        struct filter *filter = NULL;
         switch (opt) {
             case 'h':
                 cfg->help = 1;
@@ -218,8 +211,11 @@ struct config * parse_opt (int argc, char **argv) {
                 cfg->list = 1;
                 break;
             case 'f':
-                cfg->filter = optarg;
-                fprintf(stderr, "WARNING: -f argument not yet implemented\n");
+                filter = mk_filter(optarg);
+                if (cfg->filters == NULL)
+                    cfg->filters = filter;
+                else
+                    add_filter(cfg->filters, filter);
                 break;
             case 's':
                 cfg->server = optarg;
@@ -304,6 +300,9 @@ struct attrl *mk_attrl(char **attrlist) {
 
 void free_config (struct config *config) {
     free(config->outattr);
+    if (config->filters != NULL) {
+        free_filters(config->filters);
+    }
     free(config);
 }
 
@@ -565,25 +564,31 @@ int main (int argc, char **argv) {
     struct config *cfg = parse_opt(argc, argv);
     if (cfg->help) {
         show_help();
-        goto END;
+        goto HELP;
     }
 
     if (cfg->list) {
         list_attributes();
-        goto END;
+        goto HELP;
     }
 
     int handle = pbs_connect(cfg->server);
     if (handle < 0) {
         fprintf(stderr, "Couldn't connect to %s\n", cfg->server);
-        exit_status = EXIT_SUCCESS;
-        goto END;
+        exit_status = EXIT_FAILURE;
+        goto CONNECT_FAILED;
     }
 
     struct attrl *attrs = mk_attrl(cfg->outattr);
     struct jobset *jobset = mkjs_attrl(attrs);
+    struct attropl *filter = filter2attropl(cfg->filters, attributes);
 
-    char **jobs = pbs_selectjob(handle, NULL, "");
+    char **jobs = pbs_selectjob(handle, filter, "");
+    if (jobs == NULL) {
+        fprintf(stderr, "%s\n", pbs_geterrmsg(handle));
+        exit_status = EXIT_FAILURE;
+        goto SELECTJOB_FAILED;
+    }
     for (size_t i= 0; jobs[i] != NULL; i++) {
         struct batch_status *bs = pbs_statjob(handle, jobs[i], attrs, "");
 
@@ -614,18 +619,18 @@ int main (int argc, char **argv) {
             printjs(select);
     }
 
+SELECTJOB_FAILED:
     freejs(jobset);
     free(jobset);
-    //free(select->jobs);
-    //free(select);
+    free_attropl(filter);
 
-    if (attrs != NULL) {
+    if (attrs != NULL)
         free_attrl(attrs);
-    }
 
     pbs_disconnect(handle);
 
-END:
+CONNECT_FAILED:
+HELP:
     free_config(cfg);
-    return EXIT_SUCCESS;
+    return exit_status;
 }

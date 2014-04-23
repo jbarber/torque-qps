@@ -8,7 +8,7 @@ CFLAGS=-std=c99 -g3 -O0 -I/usr/include/torque ${VERSION}
 
 all: qps qps.1
 
-qps: qps.c util.c
+qps: qps.c util.c filter.c
 
 clean:
 	rm -rf qps qps.1 qps-*.tar.gz

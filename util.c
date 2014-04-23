@@ -32,6 +32,7 @@ int hms2s (char *ohms) {
         exit(EXIT_FAILURE);
     }
 
+    // TODO: use strtol() instead of atoi() and add check for success
     seconds = ((atoi(hms[0]) * 60) + atoi(hms[1])) * 60 + atoi(hms[2]);
     free(orig);
     return seconds;
@@ -95,4 +96,26 @@ struct jobset * js_select (struct jobset *js, char *attr, symbol op, char *value
     }
     select->njobs = matches;
     return select;
+}
+
+char * get_attr (char *arg, char ***attributes) {
+    for (size_t i = 0; attributes[i][0] != NULL; i++) {
+        if (strcmp(arg, attributes[i][0]) == 0) {
+            return attributes[i][1];
+        }
+    }
+    return NULL;
+}
+
+#define FREEIFNOTNULL(arg) do { if (arg != NULL) { free(arg); } } while(0);
+
+void free_attropl (struct attropl *head) {
+    while (head != NULL) {
+        struct attropl *cur = head;
+        FREEIFNOTNULL(head->name);
+        FREEIFNOTNULL(head->value);
+        FREEIFNOTNULL(head->resource);
+        head = head->next;
+        FREEIFNOTNULL(cur);
+    }
 }
