@@ -15,16 +15,18 @@ int hms2s (char *ohms) {
     char *chms = strdup(ohms);
     char *orig = chms;
     char *hms[3];
+    char *tmp;
     size_t i = 0;
 
-    while ((hms[i++] = strsep(&chms, ":")) != NULL) {
-        if (i > 3) {
+    while ((tmp = strsep(&chms, ":")) != NULL) {
+        if (i + 1 > 3) {
             seconds = -1;
             fprintf(stderr, "Too many fields in hour:minute:seconds string '%s'\n", ohms);
             exit(EXIT_FAILURE);
         }
+        hms[i++] = tmp;
     }
-    if (i != 4) {
+    if (i != 3) {
         seconds = -1;
         fprintf(stderr, "Not enough fields in hour:minute:second string '%s'\n", ohms);
         exit(EXIT_FAILURE);

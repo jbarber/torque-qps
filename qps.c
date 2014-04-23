@@ -270,6 +270,15 @@ struct attrl *mk_attr() {
     return attr;
 }
 
+void free_attrl(struct attrl *attr) {
+    struct attrl *head = attr;
+    do {
+        struct attrl *next = head->next;
+        free(head);
+        head = next;
+    } while (head != NULL);
+}
+
 struct attrl *mk_attrl(char **attrlist) {
     struct attrl *head = mk_attr();
     if (head == NULL) {
@@ -279,6 +288,7 @@ struct attrl *mk_attrl(char **attrlist) {
     struct attrl *tail = head;
 
     if (attrlist == NULL) {
+        free_attrl(head);
         return NULL;
     }
 
@@ -290,15 +300,6 @@ struct attrl *mk_attrl(char **attrlist) {
         }
     }
     return head;
-}
-
-void free_attrl(struct attrl *attr) {
-    struct attrl *head = attr;
-    do {
-        struct attrl *next = head->next;
-        free(head);
-        head = next;
-    } while (head != NULL);
 }
 
 void free_config (struct config *config) {
@@ -439,8 +440,10 @@ void printjsasqstat (struct jobset *js) {
     size_t id_width = strlen(id);
     size_t *widths = calloc(sizeof(size_t), js->nattr);
 
-    if (js->njobs == 0)
+    if (js->njobs == 0) {
+        free(widths);
         return;
+    }
 
     // Column width for attribute names
     for (size_t j = 0; j < js->nattr; j++) {
@@ -497,6 +500,8 @@ void printjsasqstat (struct jobset *js) {
         }
         printf("\n");
     }
+
+    free(widths);
 }
 
 void printjsasxml (struct jobset *js) {
