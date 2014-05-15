@@ -146,7 +146,7 @@ char ** parse_show (char *str) {
     // Copy the original string
     char *args = strdup(str);
     if (args == NULL) {
-        perror("malloc() failed");
+        perror("strdup() failed");
         exit(EXIT_FAILURE);
     }
 
