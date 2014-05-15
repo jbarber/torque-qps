@@ -32,6 +32,7 @@ static char default_output[] = "name,owner,used,state,queue";
 // s/ATTR_\(.*\)/    (char *[]) { "\1", & },/g
 static char ***attributes = (char **[]) {
     /* Attribute Names used by user commands */
+    (char *[]) { "all", "all" },
     (char *[]) { "a", ATTR_a },
     (char *[]) { "e", ATTR_e },
     (char *[]) { "f", ATTR_f },
@@ -126,7 +127,7 @@ void show_help () {
     fprintf(stderr, "  p : output in Perl format\n");
     fprintf(stderr, "  q : output in qstat 'format'\n");
     fprintf(stderr, "  f : filter jobs\n");
-    fprintf(stderr, "  o : job attributes to display\n");
+    fprintf(stderr, "  o : job attributes to display ('all' shows all attributes)\n");
 }
 
 void list_attributes () {
@@ -557,9 +558,57 @@ void printjsasjson (struct jobset *js, char *sep) {
     printf("]\n");
 }
 
+// Discover all of the job attributes a server supports. Do this by connecting
+// and requesting a list of jobs, then stat'ing the first job without specifying
+// it's attributes.
+char ** get_attrs (int handle) {
+    char **jobs = pbs_selectjob(handle, NULL, NULL);
+    if (jobs == NULL) {
+        return NULL;
+    }
+    struct batch_status *bs = pbs_statjob(handle, jobs[0], NULL, "");
+
+    char **attribs = NULL;
+    size_t i = 0;
+
+    struct attrl *attr = bs->attribs;
+    while (attr != NULL) {
+        attribs = realloc(attribs, (sizeof(char *) * (i+1)));
+        if (attribs == NULL) {
+            perror("realloc() failed");
+            exit(EXIT_FAILURE);
+        }
+        attribs[i] = strdup(attr->name);
+        if (attribs[i] == NULL) {
+            perror("strdup() failed");
+            exit(EXIT_FAILURE);
+        }
+        attr = attr->next;
+        i++;
+    }
+
+    pbs_statfree(bs);
+    free(jobs);
+
+    if (i == 0) {
+        return NULL;
+    }
+    else {
+        attribs = realloc(attribs, (sizeof(char *) * (i+1)));
+        if (attribs == NULL) {
+            perror("realloc() failed");
+            exit(EXIT_FAILURE);
+        }
+        attribs[i] = NULL;
+    }
+
+    return attribs;
+}
+
 int main (int argc, char **argv) {
     progname = argv[0];
     int exit_status = EXIT_SUCCESS;
+    char **attr = NULL;
 
     struct config *cfg = parse_opt(argc, argv);
     if (cfg->help) {
@@ -579,7 +628,18 @@ int main (int argc, char **argv) {
         goto CONNECT_FAILED;
     }
 
-    struct attrl *attrs = mk_attrl(cfg->outattr);
+    struct attrl *attrs = NULL;
+    for (size_t i = 0; cfg->outattr[i] != NULL; i++) {
+        if (0 == strcmp(cfg->outattr[i], "all")) {
+            // TODO: Need to free attr and related strings
+            attr = get_attrs(handle);
+            attrs = mk_attrl(attr);
+            break;
+        }
+    }
+    if (attr == NULL)
+        attrs = mk_attrl(cfg->outattr);
+
     struct jobset *jobset = mkjs_attrl(attrs);
     struct attropl *filter = filter2attropl(cfg->filters, attributes);
 
@@ -626,6 +686,12 @@ SELECTJOB_FAILED:
 
     if (attrs != NULL)
         free_attrl(attrs);
+
+    if (attr != NULL) {
+        for (size_t i = 0; attr[i] != NULL; i++)
+            free(attr[i]);
+        free(attr);
+    }
 
     pbs_disconnect(handle);
 
