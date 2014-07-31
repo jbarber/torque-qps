@@ -1,5 +1,5 @@
 Name:		qps
-Version:	0.0.1
+Version:	0.2.1
 Release:	1%{?dist}
 Summary:	Alternative to qstat for the Torque resource manager
 
@@ -8,7 +8,7 @@ License:	BSD
 URL:		https://github.com/jbarber/torque-qps
 Source0:	https://github.com/jbarber/torque-qps/qps-%{version}.tar.gz
 
-BuildRequires: gcc make torque-devel
+BuildRequires: gcc-c++ make torque-devel perl
 
 %description
 An "improved" version of qstat for the Torque resource manager. Features
@@ -40,5 +40,8 @@ make install DESTDIR=%{buildroot}
 %doc %{_mandir}/man1/qps.1*
 
 %changelog
+* Thu Jul 31 2014 Jonathan Barber <jonathan.barber@gmail.com> 0.2.1-1
+- Rewrite in C++
+
 * Tue Apr 1 2014 Jonathan Barber <jonathan.barber@gmail.com> 0.1-1
 - Initial specfile

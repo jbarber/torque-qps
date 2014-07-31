@@ -4,7 +4,7 @@ qps
 
 =head1 SYNOPSIS
 
-B<qps> [B<-l>] [B<-h>] [B<-s> server] [B<-j>|B<-x>|B<-q>|B<-p>] [B<-f> attr1,attr2] [B<-o> attr1,attr2]
+B<qps> [B<-h>] [B<-s> server] [B<-o> B<xml>|B<json>|B<perl>|B<qstat>] [B<-a> attr1,attr2] [B<-f> attr=FOO]
 
 =head1 DESCRIPTION
 
@@ -18,39 +18,49 @@ A "better" qstat.
 
 Show help
 
-=item B<-l>
-
-List all available job attributes
-
 =item B<-s>
 
 Torque server to connect to
 
-=item B<-j>
+=item B<-o> B<xml>|B<json>|B<perl>|B<qstat>
 
-Output in JSON format.
+Change output format.
 
-=item B<-x>
+=item B<-a> attr1,attr2
 
-Output in XML format.
+Comma seperated list of attributes to display. C<all> indicates that all of the attributes returned by the server should be shown.
 
-=item B<-p>
+=item B<-f> attr=FOO
 
-Output in Perl format
+Filter output on the basis of attribute values. Comma seperated list. The comparison operators are:
 
-=item B<-q>
+=over
 
-Output in qstat 'format'.
+=item =
 
-=item B<-o>
+Equality, e.g.:
 
-Job attributes to display, valid values are listed by the B<-l> option.
+  Job_Name=STDIN
+
+=item !=
+
+Inequality, e.g.
+
+  Job_Name!=STDIN
 
 =back
 
+=back
+
+=head1 EXAMPLES
+
+Show jobs called STDIN and their owner:
+
+  qps -a Job_Owner -f Job_Name=STDIN
+
 =head1 SEE ALSO
 
-L<qstat|http://docs.adaptivecomputing.com/torque/4-2-6/help.htm#topics/commands/qstat.htm> from the Torque resource manager.
+L<qstat(1B)>
 
 =head1 AUTHOR
 
