@@ -3,12 +3,12 @@ ifneq ($(strip ${GITREV}),)
 VERSION:='-DVERSION="${GITREV}"' 
 endif
 LDFLAGS=-ltorque
-CFLAGS=-std=c99 -g3 -O0 -I/usr/include/torque ${VERSION}
+CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION}
 .PHONY=clean all
 
 all: qps qps.1
 
-qps: qps.c util.c filter.c
+qps: qps.C
 
 clean:
 	rm -rf qps qps.1 qps-*.tar.gz
