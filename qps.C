@@ -419,9 +419,17 @@ int main(int argc, char **argv) {
         exit(EXIT_SUCCESS);
     }
 
+    // pbs_connect() breaks it's contract and can return large +ve numbers
+    // which appear to be errno's, so set pbs_errno and check it as well.
+    pbs_errno = 0;
     int h = pbs_connect((char *) cfg.server.c_str());
     if (h <= 0) {
         char *err = pbs_geterrmsg(h);
+        printf("Failed to connect to server: %s\n", err == NULL ? "Unknown reason" : err);
+        exit(EXIT_FAILURE);
+    }
+    else if (pbs_errno != 0) {
+        char *err = pbs_strerror(pbs_errno);
         printf("Failed to connect to server: %s\n", err == NULL ? "Unknown reason" : err);
         exit(EXIT_FAILURE);
     }
