@@ -421,8 +421,8 @@ int main(int argc, char **argv) {
 
     int h = pbs_connect((char *) cfg.server.c_str());
     if (h <= 0) {
-        std::string err = pbs_geterrmsg(h);
-        cout << "Failed to connect to server: " + err << endl;
+        char *err = pbs_geterrmsg(h);
+        printf("Failed to connect to server: %s\n", err == NULL ? "Unknown reason" : err);
         exit(EXIT_FAILURE);
     }
 
