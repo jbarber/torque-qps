@@ -7,8 +7,8 @@ using namespace std;
 
 extern "C" {
     #include <getopt.h>
-    #include <torque/pbs_error.h>
-    #include <torque/pbs_ifl.h>
+    #include <pbs_error.h>
+    #include <pbs_ifl.h>
 }
 
 static char *progname;
