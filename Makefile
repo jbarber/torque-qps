@@ -3,7 +3,7 @@ ifneq ($(strip ${GITREV}),)
 VERSION:='-DVERSION="${GITREV}"' 
 endif
 LDFLAGS=-ltorque
-CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION}
+CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION} -Wall
 .PHONY=clean all
 
 all: qps qps.1

@@ -58,16 +58,17 @@ class Filter {
 bool test (Attribute attribute, Filter filter) {
     switch (filter.op) {
         case Filter::EQ:
-            attribute.value == filter.value;
+            return attribute.value == filter.value;
             break;
         case Filter::NE:
-            attribute.value != filter.value;
+            return attribute.value != filter.value;
             break;
         default:
             cout << "Not yet supported";
             exit(EXIT_FAILURE);
             break;
     }
+    return false;
 }
 
 Filter::Filter (std::string filter) {
@@ -127,7 +128,6 @@ std::vector<BatchStatus> bs2BatchStatus (struct batch_status *bs) {
         return status;
     }
 
-    auto next = bs;
     while (bs != NULL) {
         status.push_back(BatchStatus(bs));
         bs = bs->next;
@@ -156,12 +156,12 @@ BatchStatus::BatchStatus (struct batch_status *bs) {
 
 void xml_out (std::vector<BatchStatus> jobs) {
     cout << "<Data>";
-    for (auto i = 0; i < jobs.size(); i++) {
+    for (decltype(jobs.size()) i = 0; i < jobs.size(); i++) {
         auto job = jobs[i];
         cout << "<Job>";
         cout << "<JobId>" + job.name + "</JobId>";
 
-        for (auto j = 0; j < job.attributes.size(); j++) {
+        for (decltype(job.attributes.size()) j = 0; j < job.attributes.size(); j++) {
             auto a = job.attributes[j];
             cout << "<" + a.dottedname() + ">" + a.value + "</" + a.dottedname() + ">";
         }
@@ -174,7 +174,7 @@ void xml_out (std::vector<BatchStatus> jobs) {
 void json_out (std::vector<BatchStatus> jobs, std::string sep) {
     cout << "[" << endl;
 
-    for (auto i = 0; i < jobs.size(); i++) {
+    for (decltype(jobs.size()) i = 0; i < jobs.size(); i++) {
         auto job = jobs[i];
         cout << "  {" << endl;
         cout << "    \"name\" " + sep + " \"" + job.name + '"';
@@ -183,7 +183,7 @@ void json_out (std::vector<BatchStatus> jobs, std::string sep) {
         }
         cout << endl;
 
-        for (auto j = 0; j < job.attributes.size(); j++) {
+        for (decltype(job.attributes.size()) j = 0; j < job.attributes.size(); j++) {
             auto attr = job.attributes[j];
             cout << "    \"" + attr.dottedname() + "\" " + sep + " \"" + attr.value + '"';
             if (j+1 != job.attributes.size()) {
@@ -230,31 +230,31 @@ void qstat_out (std::vector<BatchStatus> jobs) {
     }
 
     // Get column heading widths
-    for (auto i = 0; i < jobs[0].attributes.size(); i++) {
+    for (decltype(jobs[0].attributes.size()) i = 0; i < jobs[0].attributes.size(); i++) {
         colWidths.push_back(jobs[0].attributes[i].dottedname().length());
     }
 
     // Get column widths for job attribute values
-    for (auto i = 0; i < jobs.size(); i++) {
+    for (decltype(jobs.size()) i = 0; i < jobs.size(); i++) {
         if (jobs[i].name.length() > idWidth)
             idWidth = jobs[i].name.length();
 
-        for (auto j = 0; j < jobs[i].attributes.size(); j++) {
+        for (decltype(jobs[i].attributes.size()) j = 0; j < jobs[i].attributes.size(); j++) {
             if (jobs[i].attributes[j].value.length() > colWidths[j])
                 colWidths[j] = jobs[i].attributes[j].value.length();
         }
     }
 
     // Print header
-    printf("%-*s ", idWidth, id.c_str());
-    for (auto i = 0; i < colWidths.size(); i++) {
-        printf("%-*s", colWidths[i], jobs[0].attributes[i].dottedname().c_str());
+    printf("%-*s ", (int) idWidth, id.c_str());
+    for (decltype(colWidths.size()) i = 0; i < colWidths.size(); i++) {
+        printf("%-*s", (int) colWidths[i], jobs[0].attributes[i].dottedname().c_str());
         if (i + 1 < jobs[0].attributes.size())
             cout << " ";
     }
     cout << endl;
     cout << line(idWidth) + " ";
-    for (auto i = 0; i < colWidths.size(); i++) {
+    for (decltype(colWidths.size()) i = 0; i < colWidths.size(); i++) {
         cout << line(colWidths[i]);
         if (i + 1 < jobs[0].attributes.size())
             cout << " ";
@@ -262,11 +262,11 @@ void qstat_out (std::vector<BatchStatus> jobs) {
     cout << endl;
 
     // Print job attributes
-    for (auto i = 0; i < jobs.size(); i++) {
-        printf("%-*s ", idWidth, jobs[i].name.c_str());
+    for (decltype(colWidths.size()) i = 0; i < jobs.size(); i++) {
+        printf("%-*s ", (int) idWidth, jobs[i].name.c_str());
         
-        for (auto j = 0; j < jobs[i].attributes.size(); j++) {
-            printf("%-*s", colWidths[j], jobs[i].attributes[j].value.c_str());
+        for (decltype(jobs[i].attributes.size()) j = 0; j < jobs[i].attributes.size(); j++) {
+            printf("%-*s", (int) colWidths[j], jobs[i].attributes[j].value.c_str());
 
             if (j + 1 < jobs[i].attributes.size()) {
                 cout << " ";
