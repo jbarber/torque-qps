@@ -14,19 +14,15 @@ Features are:
 USAGE
 =====
 
-    qps, version ...
-     
-    usage: ./qps [-l] [-h] [-s server] [-j|-x|-q] [-f attr1=value1|[-f attr2=value2|...]] [-o attr1,attr2]
-    
+    qps, built from 232e91b
+
+    usage: ./qps [-h] [-s server] [-o xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo]
+
       h : show help
-      l : list all available job attributes
       s : server to connect to
-      j : output in JSON format
-      x : output in XML format
-      p : output in Perl format
-      q : output in qstat 'format'
-      f : filter jobs
-      o : job attributes to display
+      o : output format (xml|perl|qstat|json)
+      a : job attributes to display ('all' for all attributes)
+      f : attributes=value to filter jobs (e.g. -f job_state=R)
 
 
 FILTERS
@@ -40,12 +36,6 @@ comparison is permitted. For example, the following:
     qps -f name=FOO -f owner=jbarber@example.com
 
 returns all jobs owned by the user `jbarber@example.com` and called `FOO`.
-
-Not all attributes are allowed to be queried by all users and will cause an
-error. For example:
-
-    qps -f name=FOO -f owner=jbarber@example.com -f euser=jbarber
-    Unauthorized Request  euser
 
 BUILD INSTRUCTIONS
 ==================

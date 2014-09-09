@@ -219,6 +219,7 @@ std::string line(size_t length) {
     return line;
 }
 
+// FIXME: This is broken for jobs that don't have the same attributes in the same order
 void qstat_out (std::vector<BatchStatus> jobs) {
     std::string id = "Job id";
     auto idWidth = id.length();
@@ -274,10 +275,6 @@ void qstat_out (std::vector<BatchStatus> jobs) {
         }
         cout << endl;
     }
-}
-
-void show_usage() {
-    fprintf(stderr, "usage: %s [-h] [-s server] [-f xml|json|perl|qstat] [-o attr1,attr2]\n", progname);
 }
 
 // From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
@@ -399,6 +396,10 @@ std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Fi
     return filtered;
 }
 
+void show_usage() {
+    fprintf(stderr, "usage: %s [-h] [-s server] [-o xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo]\n", progname);
+}
+
 void show_help () {
     fprintf(stderr, "qps, built from %s\n\n", VERSION);
     show_usage();
@@ -407,7 +408,7 @@ void show_help () {
     fprintf(stderr, "  s : server to connect to\n");
     fprintf(stderr, "  o : output format (xml|perl|qstat|json)\n");
     fprintf(stderr, "  a : job attributes to display ('all' for all attributes)\n");
-    fprintf(stderr, "  f : output format (xml|perl|qstat|json)\n");
+    fprintf(stderr, "  f : attributes=value to filter jobs (e.g. -f job_state=R)\n");
 }
 
 int main(int argc, char **argv) {
