@@ -2,7 +2,7 @@ GITREV=$(shell git rev-parse --short --verify HEAD 2>/dev/null)
 ifneq ($(strip ${GITREV}),)
 VERSION:='-DVERSION="${GITREV}"' 
 endif
-LDFLAGS=-ltorque
+LDLIBS=-ltorque
 CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION} -Wall
 .PHONY=clean all
 
