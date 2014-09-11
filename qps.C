@@ -371,7 +371,7 @@ Config::Config (int argc, char **argv) {
         }
     }
 
-    if (outformat == "") {
+    if (outformat == "" || outformat == "indent") {
         outstyle = Config::DEFAULT;
     } else if (outformat == "xml") {
         outstyle = Config::XML;
@@ -450,7 +450,7 @@ std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Fi
 }
 
 void show_usage() {
-    fprintf(stderr, "usage: %s [-h] [-s server] [-o xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]\n", progname);
+    fprintf(stderr, "usage: %s [-h] [-s server] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]\n", progname);
 }
 
 void show_help () {

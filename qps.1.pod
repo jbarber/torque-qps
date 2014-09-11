@@ -4,7 +4,7 @@ qps
 
 =head1 SYNOPSIS
 
-B<qps> [B<-h>] [B<-s> server] [B<-o> B<xml>|B<json>|B<perl>|B<qstat>] [B<-a> attr1,attr2] [B<-f> attr3=foo] [jobid1 jobid2 ...]
+B<qps> [B<-h>] [B<-s> server] [B<-o> B<indent>|B<xml>|B<json>|B<perl>|B<qstat>] [B<-a> attr1,attr2] [B<-f> attr3=foo] [jobid1 jobid2 ...]
 
 =head1 DESCRIPTION
 
@@ -22,9 +22,9 @@ Show help
 
 Torque server to connect to
 
-=item B<-o> B<xml>|B<json>|B<perl>|B<qstat>
+=item B<-o> B<indent>|B<xml>|B<json>|B<perl>|B<qstat>
 
-Select the output format
+Select the output format, the default is B<indent>.
 
 =item B<-a> attr1,attr2
 
