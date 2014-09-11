@@ -154,21 +154,54 @@ BatchStatus::BatchStatus (struct batch_status *bs) {
     }
 }
 
+std::string xml_escape (std::string input) {
+    std::string output = "";
+    for (unsigned int i = 0; i < input.length(); i++) {
+        switch (input[i]) {
+            case '&':
+                output += "&amp;";
+                break;
+            case '<':
+                output += "&lt;";
+                break;
+            case '>':
+                output += "&gt;";
+                break;
+            default:
+                output += input[i];
+                break;
+        }
+    }
+    return output;
+}
+
 void xml_out (std::vector<BatchStatus> jobs) {
     cout << "<Data>";
     for (decltype(jobs.size()) i = 0; i < jobs.size(); i++) {
         auto job = jobs[i];
         cout << "<Job>";
-        cout << "<JobId>" + job.name + "</JobId>";
+        cout << "<JobId>" + xml_escape(job.name) + "</JobId>";
 
         for (decltype(job.attributes.size()) j = 0; j < job.attributes.size(); j++) {
             auto a = job.attributes[j];
-            cout << "<" + a.dottedname() + ">" + a.value + "</" + a.dottedname() + ">";
+            cout << "<" + a.dottedname() + ">" + xml_escape(a.value) + "</" + a.dottedname() + ">";
         }
         cout << "</Job>";
     }
 
     cout << "</Data>";
+}
+
+std::string quote_escape (std::string input, const char quote) {
+    std::string output = "";
+
+    for (unsigned int i = 0; i < input.length(); i++) {
+        if (input[i] == quote) {
+            output += '\\';
+        }
+        output += input[i];
+    }
+    return output;
 }
 
 void json_out (std::vector<BatchStatus> jobs, std::string sep) {
@@ -185,7 +218,7 @@ void json_out (std::vector<BatchStatus> jobs, std::string sep) {
 
         for (decltype(job.attributes.size()) j = 0; j < job.attributes.size(); j++) {
             auto attr = job.attributes[j];
-            cout << "    \"" + attr.dottedname() + "\" " + sep + " \"" + attr.value + '"';
+            cout << "    \"" + attr.dottedname() + "\" " + sep + " \"" + quote_escape(attr.value, '"') + '"';
             if (j+1 != job.attributes.size()) {
                 cout << ',';
             }
