@@ -466,7 +466,7 @@ void show_help () {
     fprintf(stderr, "  When jobids are given, only these jobs are filtered by the -f argument\n");
 }
 
-int main(int argc, char **argv) {
+int main (int argc, char **argv) {
     progname = argv[0];
     auto cfg = Config(argc, argv);
 
@@ -475,8 +475,9 @@ int main(int argc, char **argv) {
         exit(EXIT_SUCCESS);
     }
 
-    // pbs_connect() breaks it's contract and can return large +ve numbers
-    // which appear to be errno's, so set pbs_errno and check it as well.
+    // pbs_connect() breaks it contract and can return large +ve numbers
+    // (~15000) which appear to be errno's, so set pbs_errno and check it as
+    // well.
     pbs_errno = 0;
     int h = pbs_connect((char *) cfg.server.c_str());
     if (h <= 0) {
