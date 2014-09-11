@@ -312,13 +312,13 @@ void qstat_out (std::vector<BatchStatus> jobs) {
 }
 
 // From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
-void Tokenize(const std::string &str, std::set<string>& tokens, const std::string& delimiters = " ") {
+void Tokenize(const std::string &str, std::set<std::string>& tokens, const std::string& delimiters = " ") {
     // Skip delimiters at beginning.
-    string::size_type lastPos = str.find_first_not_of(delimiters, 0);
+    std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
     // Find first "non-delimiter".
-    string::size_type pos     = str.find_first_of(delimiters, lastPos);
+    std::string::size_type pos     = str.find_first_of(delimiters, lastPos);
 
-    while (string::npos != pos || string::npos != lastPos) {
+    while (std::string::npos != pos || std::string::npos != lastPos) {
         // Found a token, add it to the vector.
         tokens.insert(str.substr(lastPos, pos - lastPos));
         // Skip delimiters.  Note the "not_of"
@@ -386,7 +386,7 @@ Config::Config (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    std::set<string> l_filters;
+    std::set<std::string> l_filters;
     Tokenize(filter_str, l_filters, ",");
     for (auto i = l_filters.begin(); i != l_filters.end(); ++i) {
         filters.push_back(Filter(*i));
@@ -397,7 +397,7 @@ Config::Config (int argc, char **argv) {
 
 // Return a new std::vector<BatchStatus> with the same jobs as s with only
 // the attributes specified by attr
-std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus> s, std::set<string> attr) {
+std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus> s, std::set<std::string> attr) {
     std::vector<BatchStatus> filtered;
 
     bool all = false;
