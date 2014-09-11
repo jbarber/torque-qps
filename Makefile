@@ -1,6 +1,8 @@
 GITREV=$(shell git rev-parse --short --verify HEAD 2>/dev/null)
 ifneq ($(strip ${GITREV}),)
-VERSION:='-DVERSION="${GITREV}"' 
+VERSION:='-DVERSION="${GITREV}"'
+else
+VERSION:='-DVERSION="from unknown git revision"'
 endif
 LDLIBS=-ltorque
 CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION} -Wall
@@ -16,8 +18,7 @@ clean:
 qps.1: qps.1.pod
 	pod2man $< > $@
 
-TARVERSION=0.0.1
-
+TARVERSION=0.2.1
 TARBALL=qps-${TARVERSION}.tar.gz
 
 ${TARBALL}:
