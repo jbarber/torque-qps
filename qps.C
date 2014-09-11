@@ -106,8 +106,9 @@ class Config {
         bool help;
         std::string server;
         std::string output;
-        std::set<string> outattr;
+        std::set<std::string> outattr;
         std::vector<Filter> filters;
+        std::vector<std::string> jobs;
         enum   Output { DEFAULT, XML, JSON, QSTAT, PERL };
         Output outstyle;
         Config (int, char **);
@@ -364,6 +365,12 @@ Config::Config (int argc, char **argv) {
         }
     }
 
+    if (optind != argc) {
+        for (int i = optind; i < argc; i++) {
+            jobs.push_back(argv[i]);
+        }
+    }
+
     if (outformat == "") {
         outstyle = Config::DEFAULT;
     } else if (outformat == "xml") {
@@ -412,6 +419,19 @@ std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus> s, std::set
     return filtered;
 }
 
+std::vector<BatchStatus> select_jobs (std::vector<BatchStatus> s, std::vector<std::string> jobids) {
+    std::vector<BatchStatus> filtered;
+
+    for (auto i = s.begin(); i != s.end(); ++i) {
+        for (unsigned int j = 0; j < jobids.size(); ++j) {
+            if (i->name == jobids[j]) {
+                filtered.push_back(*i);
+            }
+        }
+    }
+    return filtered;
+}
+
 std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Filter> f) {
     std::vector<BatchStatus> filtered;
     
@@ -430,7 +450,7 @@ std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Fi
 }
 
 void show_usage() {
-    fprintf(stderr, "usage: %s [-h] [-s server] [-o xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo]\n", progname);
+    fprintf(stderr, "usage: %s [-h] [-s server] [-o xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]\n", progname);
 }
 
 void show_help () {
@@ -442,6 +462,8 @@ void show_help () {
     fprintf(stderr, "  o : output format (xml|perl|qstat|json)\n");
     fprintf(stderr, "  a : job attributes to display ('all' for all attributes)\n");
     fprintf(stderr, "  f : attributes=value to filter jobs (e.g. -f job_state=R)\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "  When jobids are given, only these jobs are filtered by the -f argument\n");
 }
 
 int main(int argc, char **argv) {
@@ -481,11 +503,17 @@ int main(int argc, char **argv) {
     pbs_disconnect(h);
 
     std::vector<BatchStatus> filtered;
-    if (cfg.filters.size()) {
-        filtered = filter_jobs(jobs, cfg.filters);
+    // FIXME: Really this should be done with the same filtering logic as
+    // filter_jobs(), but filter_jobs() doesn't do the job yet
+    if (cfg.jobs.size()) {
+        filtered = select_jobs(jobs, cfg.jobs);
     }
     else {
         filtered = jobs;
+    }
+
+    if (cfg.filters.size()) {
+        filtered = filter_jobs(filtered, cfg.filters);
     }
     auto finaljobs = filter_attributes(filtered, cfg.outattr);
 

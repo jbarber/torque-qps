@@ -4,7 +4,7 @@ qps
 
 =head1 SYNOPSIS
 
-B<qps> [B<-h>] [B<-s> server] [B<-o> B<xml>|B<json>|B<perl>|B<qstat>] [B<-a> attr1,attr2] [B<-f> attr=FOO]
+B<qps> [B<-h>] [B<-s> server] [B<-o> B<xml>|B<json>|B<perl>|B<qstat>] [B<-a> attr1,attr2] [B<-f> attr3=foo] [jobid1 jobid2 ...]
 
 =head1 DESCRIPTION
 
@@ -24,7 +24,7 @@ Torque server to connect to
 
 =item B<-o> B<xml>|B<json>|B<perl>|B<qstat>
 
-Change output format.
+Select the output format
 
 =item B<-a> attr1,attr2
 
@@ -50,6 +50,8 @@ Inequality, e.g.
 
 =back
 
+Remaining arguments are treated as job ID, and only those IDs provided will be shown (after filtering is applied).
+
 =back
 
 =head1 EXAMPLES
@@ -57,6 +59,10 @@ Inequality, e.g.
 Show jobs called STDIN and their owner:
 
   qps -a Job_Owner -f Job_Name=STDIN
+
+Show the Job_Owner of jobs called STDIN from jobs 1, 2, and 3:
+
+  qps -a Job_Owner -f Job_Name=STDIN 1 2 3
 
 =head1 SEE ALSO
 
