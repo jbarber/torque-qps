@@ -438,8 +438,9 @@ int main(int argc, char **argv) {
     auto bs = pbs_statjob(h, (char *) "", NULL, (char *) "");
     if (bs == NULL) {
         pbs_disconnect(h);
-        cout << "failed to get status" << endl;
-        exit(EXIT_FAILURE);
+        // FIXME: This can mean either that we failed to get any jobs, or that
+        // there were no jobs to query. Assume that everything was fine
+        exit(EXIT_SUCCESS);
     }
     auto jobs = bs2BatchStatus(bs);
 
