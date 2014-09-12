@@ -89,7 +89,7 @@ std::vector<BatchStatus> bs2BatchStatus (struct batch_status *bs) {
     while (bs != NULL) {
         status.push_back(BatchStatus(bs));
         bs = bs->next;
-    } 
+    }
     return status;
 }
 
@@ -257,7 +257,7 @@ void qstat_out (std::vector<BatchStatus> jobs) {
     // Print job attributes
     for (decltype(colWidths.size()) i = 0; i < jobs.size(); i++) {
         printf("%-*s ", (int) idWidth, jobs[i].name.c_str());
-        
+
         for (decltype(jobs[i].attributes.size()) j = 0; j < jobs[i].attributes.size(); j++) {
             printf("%-*s", (int) colWidths[j], jobs[i].attributes[j].value.c_str());
 
@@ -392,7 +392,7 @@ std::vector<BatchStatus> select_jobs (std::vector<BatchStatus> s, std::vector<st
 
 std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Filter> f) {
     std::vector<BatchStatus> filtered;
-    
+
     for (auto i = s.begin(); i != s.end(); ++i) {
         for (auto j = i->attributes.begin(); j != i->attributes.end(); ++j) {
             for (auto k = f.begin(); k != f.end(); ++k) {
