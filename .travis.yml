@@ -4,6 +4,6 @@ compiler:
   - clang
 script: "make qps && make tests"
 before_install:
-    - sudo apt-get update -qq
-    - sudo apt-get install libtorque2 libtorque2-dev libgtest-dev
-    - "cd /usr/src/gtest && sudo cmake . && sudo cmake --build . && sudo mv libg* /usr/local/lib/ ; cd -"
+    - "sudo apt-get update -qq"
+    - "sudo apt-get install libtorque2 libtorque2-dev libgtest-dev"
+    - "cd /usr/src/gtest && sudo cmake -Dgtest_disable_pthreads=ON && sudo cmake --build && sudo mv libg* /usr/local/lib/; cd -"
