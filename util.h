@@ -57,8 +57,8 @@ std::vector<BatchStatus> select_jobs (std::vector<BatchStatus>, std::vector<std:
 std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus>, std::vector<Filter>);
 std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus>, std::set<std::string>);
 std::string xml_out (std::vector<BatchStatus>);
-void json_out (std::vector<BatchStatus>, std::string);
-void txt_out (std::vector<BatchStatus>);
-void qstat_out (std::vector<BatchStatus>);
+std::string json_out (std::vector<BatchStatus>, std::string);
+std::string txt_out (std::vector<BatchStatus>);
+std::string qstat_out (std::vector<BatchStatus>);
 
 #endif

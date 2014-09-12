@@ -3,6 +3,7 @@
 #include <set>
 #include <map>
 #include <iostream>
+#include <cstdarg>
 #include "util.h"
 using namespace std;
 
@@ -171,55 +172,78 @@ std::string quote_escape (std::string input, const char quote) {
     return output;
 }
 
-void json_out (std::vector<BatchStatus> jobs, std::string sep) {
-    cout << "[" << endl;
+std::string json_out (std::vector<BatchStatus> jobs, std::string sep) {
+    std::string output = "[\n";
 
     for (decltype(jobs.size()) i = 0; i < jobs.size(); i++) {
         auto job = jobs[i];
-        cout << "  {" << endl;
-        cout << "    \"name\" " + sep + " \"" + job.name + '"';
+        output += "  {\n";
+        output += "    \"name\" " + sep + " \"" + job.name + '"';
         if (job.attributes.size() != 0) {
-            cout << ',';
+            output += ',';
         }
-        cout << endl;
+        output += '\n';
 
         for (decltype(job.attributes.size()) j = 0; j < job.attributes.size(); j++) {
             auto attr = job.attributes[j];
-            cout << "    \"" + attr.dottedname() + "\" " + sep + " \"" + quote_escape(attr.value, '"') + '"';
+            output += "    \"" + attr.dottedname() + "\" " + sep + " \"" + quote_escape(attr.value, '"') + '"';
             if (j+1 != job.attributes.size()) {
-                cout << ',';
+                output += ',';
             }
-            cout << endl;
+            output += '\n';
         }
 
-        cout << "  }";
+        output += "  }";
         if (i + 1 != jobs.size())
-            cout << ',';
-        cout << endl;
+            output += ',';
+        output += '\n';
     }
 
-    cout << "]" << endl;
+    output += "]\n";
+    return output;
 }
 
-void txt_out (std::vector<BatchStatus> jobs) {
+std::string txt_out (std::vector<BatchStatus> jobs) {
+    std::string output = "";
     for (auto j = jobs.begin(); j != jobs.end(); ++j) {
-        cout << j->name << endl;
+        output += j->name + "\n";
         for (auto i = j->attributes.begin(); i != j->attributes.end(); ++i) {
             std::string indent = i->resource != "" ? "    " : "  ";
-            cout << indent + i->dottedname() + ": " + i->value << endl;
+            output += indent + i->dottedname() + ": " + i->value + '\n';
         }
+    }
+    return output;
+}
+
+// https://stackoverflow.com/a/8362718
+std::string string_format(const std::string &fmt, ...) {
+    int size=100;
+    std::string str;
+    va_list ap;
+    while (1) {
+        str.resize(size);
+        va_start(ap, fmt);
+        int n = vsnprintf((char *)str.c_str(), size, fmt.c_str(), ap);
+        va_end(ap);
+        if (n > -1 && n < size)
+            return str;
+        if (n > -1)
+            size=n+1;
+        else
+            size*=2;
     }
 }
 
 // FIXME: This is broken for jobs that don't have the same attributes in the same order
-void qstat_out (std::vector<BatchStatus> jobs) {
+std::string qstat_out (std::vector<BatchStatus> jobs) {
+    std::string output = "";
     std::string id = "Job id";
     auto idWidth = id.length();
     std::vector<size_t> colWidths;
 
     // No jobs, don't output anything
     if (jobs.size() == 0) {
-        return;
+        return output;
     }
 
     // Get column heading widths
@@ -239,34 +263,35 @@ void qstat_out (std::vector<BatchStatus> jobs) {
     }
 
     // Print header
-    printf("%-*s ", (int) idWidth, id.c_str());
+    output += string_format("%-*s ", (int) idWidth, id.c_str());
     for (decltype(colWidths.size()) i = 0; i < colWidths.size(); i++) {
-        printf("%-*s", (int) colWidths[i], jobs[0].attributes[i].dottedname().c_str());
+        output += string_format("%-*s", (int) colWidths[i], jobs[0].attributes[i].dottedname().c_str());
         if (i + 1 < jobs[0].attributes.size())
-            cout << " ";
+            output += " ";
     }
-    cout << endl;
-    cout << line(idWidth) + " ";
+    output += '\n';
+    output += line(idWidth) + " ";
     for (decltype(colWidths.size()) i = 0; i < colWidths.size(); i++) {
-        cout << line(colWidths[i]);
+        output += line(colWidths[i]);
         if (i + 1 < jobs[0].attributes.size())
-            cout << " ";
+            output += " ";
     }
-    cout << endl;
+    output += '\n';
 
     // Print job attributes
     for (decltype(colWidths.size()) i = 0; i < jobs.size(); i++) {
-        printf("%-*s ", (int) idWidth, jobs[i].name.c_str());
+        output += string_format("%-*s ", (int) idWidth, jobs[i].name.c_str());
 
         for (decltype(jobs[i].attributes.size()) j = 0; j < jobs[i].attributes.size(); j++) {
-            printf("%-*s", (int) colWidths[j], jobs[i].attributes[j].value.c_str());
+            output += string_format("%-*s", (int) colWidths[j], jobs[i].attributes[j].value.c_str());
 
-            if (j + 1 < jobs[i].attributes.size()) {
-                cout << " ";
-            }
+            if (j + 1 < jobs[i].attributes.size())
+                output += " ";
         }
-        cout << endl;
+        output += '\n';
     }
+
+    return output;
 }
 
 // From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
@@ -430,9 +455,24 @@ TEST(line, equal) {
         EXPECT_EQ(line(1), "-");
 }
 
-TEST(xmlout, equal) {
+TEST(xml_out, equal) {
         std::vector<BatchStatus> b = std::vector<BatchStatus>();
         EXPECT_EQ(xml_out(b), "<Data></Data>");
+}
+
+TEST(json_out, equal) {
+        std::vector<BatchStatus> b = std::vector<BatchStatus>();
+        EXPECT_EQ(json_out(b, ":"), "[\n]\n");
+}
+
+TEST(qstat_out, equal) {
+        std::vector<BatchStatus> b = std::vector<BatchStatus>();
+        EXPECT_EQ(qstat_out(b), "");
+}
+
+TEST(txt_out, equal) {
+        std::vector<BatchStatus> b = std::vector<BatchStatus>();
+        EXPECT_EQ(txt_out(b), "");
 }
 
 int main(int argc, char **argv) {

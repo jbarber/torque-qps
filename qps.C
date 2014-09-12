@@ -80,19 +80,19 @@ int main (int argc, char **argv) {
 
     switch (cfg.outstyle) {
         case Config::XML:
-            xml_out(finaljobs);
+            cout << xml_out(finaljobs);
             break;
         case Config::JSON:
-            json_out(finaljobs, ":");
+            cout << json_out(finaljobs, ":");
             break;
         case Config::PERL:
-            json_out(finaljobs, "=>");
+            cout << json_out(finaljobs, "=>");
             break;
         case Config::QSTAT:
-            qstat_out(finaljobs);
+            cout << qstat_out(finaljobs);
             break;
         case Config::DEFAULT:
-            txt_out(finaljobs);
+            cout << txt_out(finaljobs);
             break;
         default:
             cout << "Unknown format: " << endl;
