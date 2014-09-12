@@ -6,14 +6,22 @@ VERSION:='-DVERSION="from unknown git revision"'
 endif
 LDLIBS=-ltorque
 CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION} -Wall
-.PHONY=clean all
+.PHONY=clean all test
 
 all: qps qps.1
 
-qps: qps.C
+testsuite: LDLIBS+=-lgtest
+testsuite: CXXFLAGS+=-DTESTING
+testsuite: util.C
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+tests: testsuite
+	@./$^
 
 clean:
-	rm -rf qps qps.1 qps-*.tar.gz
+	rm -rf qps qps.1 qps-*.tar.gz testsuite *.o
+
+qps: qps.C util.C
 
 qps.1: qps.1.pod
 	pod2man $< > $@
@@ -33,6 +41,3 @@ srpm: ${TARBALL}
 install: qps qps.1
 	install -m755 qps ${DESTDIR}/usr/bin
 	install -m644 qps.1 ${DESTDIR}/usr/share/man/man1
-
-test:
-	true
