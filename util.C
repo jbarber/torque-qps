@@ -81,6 +81,7 @@ Filter::Filter (std::string filter) {
     value     = filter.substr(offset + winner.length());
 }
 
+// TODO: Can this be replaced with a constructor?
 std::vector<BatchStatus> bs2BatchStatus (struct batch_status *bs) {
     std::vector<BatchStatus> status;
     if (bs == NULL) {
@@ -440,42 +441,115 @@ std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Fi
 using ::testing::InitGoogleTest;
 using namespace std;
 
-TEST(xml_escape, escaped) {
-        EXPECT_EQ(xml_escape("foo"), "foo");
-        EXPECT_EQ(xml_escape("&"), "&amp;");
-        EXPECT_EQ(xml_escape(">"), "&gt;");
-        EXPECT_EQ(xml_escape(">&"), "&gt;&amp;");
-        EXPECT_EQ(xml_escape(">&<"), "&gt;&amp;&lt;");
+TEST(xml_escape, NoSpecial) {
+    EXPECT_EQ(xml_escape("foo"), "foo");
 }
 
-TEST(quote_escape, escaped) {
-        EXPECT_EQ(quote_escape("foo", '\''), "foo");
-        EXPECT_EQ(quote_escape("fo'o", '\''), "fo\\'o");
+TEST(xml_escape, OneAmp) {
+    EXPECT_EQ(xml_escape("&"), "&amp;");
 }
 
-TEST(line, equal) {
-        EXPECT_EQ(line(0), "");
-        EXPECT_EQ(line(1), "-");
+TEST(xml_escape, OneGt) {
+    EXPECT_EQ(xml_escape(">"), "&gt;");
 }
 
-TEST(xml_out, equal) {
-        std::vector<BatchStatus> b = std::vector<BatchStatus>();
-        EXPECT_EQ(xml_out(b), "<Data></Data>");
+TEST(xml_escape, GtAmp) {
+    EXPECT_EQ(xml_escape(">&"), "&gt;&amp;");
 }
 
-TEST(json_out, equal) {
-        std::vector<BatchStatus> b = std::vector<BatchStatus>();
-        EXPECT_EQ(json_out(b, ":"), "[\n]\n");
+TEST(xml_escape, GtAmpLt) {
+    EXPECT_EQ(xml_escape(">&<"), "&gt;&amp;&lt;");
 }
 
-TEST(qstat_out, equal) {
-        std::vector<BatchStatus> b = std::vector<BatchStatus>();
-        EXPECT_EQ(qstat_out(b), "");
+TEST(quote_escape, NoSpecial) {
+    EXPECT_EQ(quote_escape("foo", '\''), "foo");
 }
 
-TEST(txt_out, equal) {
-        std::vector<BatchStatus> b = std::vector<BatchStatus>();
-        EXPECT_EQ(txt_out(b), "");
+TEST(quote_escape, SingleQuote) {
+    EXPECT_EQ(quote_escape("fo'o", '\''), "fo\\'o");
+}
+
+TEST(quote_escape, DoubleQuote) {
+    EXPECT_EQ(quote_escape("fo''o", '\''), "fo\\'\\'o");
+}
+
+TEST(line, EmptyLine) {
+    EXPECT_EQ(line(0), "");
+}
+
+TEST(line, SingleLine) {
+    EXPECT_EQ(line(1), "-");
+}
+
+class BatchStatusTest : public ::testing::Test {
+    protected:
+        virtual void SetUp() {
+            BatchStatus job = BatchStatus("1234.example.com", "");
+
+            onejob.push_back(job);
+        }
+        std::vector<BatchStatus> empty;
+        std::vector<BatchStatus> onejob;
+        std::vector<string> queries;
+};
+
+TEST_F(BatchStatusTest, xml_out) {
+        EXPECT_EQ(xml_out(empty), "<Data></Data>");
+}
+
+TEST_F(BatchStatusTest, json_out) {
+        EXPECT_EQ(json_out(empty, ":"), "[\n]\n");
+}
+
+TEST_F(BatchStatusTest, qstat_out) {
+        EXPECT_EQ(qstat_out(empty), "");
+}
+
+TEST_F(BatchStatusTest, txt_out) {
+        EXPECT_EQ(txt_out(empty), "");
+}
+
+TEST_F(BatchStatusTest, NoJobs) {
+    queries.push_back("123");
+    EXPECT_EQ(select_jobs(empty, queries).size(), 0);
+}
+
+TEST_F(BatchStatusTest, NoJobsNoQuery) {
+    EXPECT_EQ(select_jobs(empty, queries).size(), 0);
+}
+
+TEST_F(BatchStatusTest, JobsNoQuery) {
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+}
+
+TEST_F(BatchStatusTest, NoMatch) {
+    queries.push_back("123");
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+}
+
+TEST_F(BatchStatusTest, NoMatchPeriod) {
+    queries.push_back("123.");
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+}
+
+TEST_F(BatchStatusTest, NoMatchSubstring) {
+    queries.push_back("234");
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+}
+
+TEST_F(BatchStatusTest, Match) {
+    queries.push_back("1234");
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 1);
+}
+
+TEST_F(BatchStatusTest, MatchPeriod) {
+    queries.push_back("1234.");
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 1);
+}
+
+TEST_F(BatchStatusTest, MatchFull) {
+    queries.push_back("1234.example.com");
+    EXPECT_EQ(select_jobs(onejob, queries).size(), 1);
 }
 
 int main(int argc, char **argv) {
