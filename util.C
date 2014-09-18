@@ -407,9 +407,12 @@ std::vector<BatchStatus> select_jobs (std::vector<BatchStatus> s, std::vector<st
 
     for (auto i = s.begin(); i != s.end(); ++i) {
         for (unsigned int j = 0; j < jobids.size(); ++j) {
-            if (i->name == jobids[j]) {
+            auto query = jobids[j];
+            if (query.find(".", 0) == std::string::npos)
+                query += ".";
+
+            if (i->name.find(query, 0) == 0)
                 filtered.push_back(*i);
-            }
         }
     }
     return filtered;
