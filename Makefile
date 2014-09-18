@@ -18,6 +18,9 @@ testsuite: util.C
 tests: testsuite
 	@./$^
 
+valgrind: testsuite
+	valgrind --leak-check=full --suppressions=valgrind.sup ./$^
+
 clean:
 	rm -rf qps qps.1 qps-*.tar.gz testsuite *.o
 

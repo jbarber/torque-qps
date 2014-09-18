@@ -1,0 +1,10 @@
+{
+   <libtorque leaks>
+   Memcheck:Leak
+   fun:calloc
+   fun:PBSD_rdrpy
+   fun:PBSD_munge_authenticate
+   fun:pbs_original_connect
+   fun:pbs_connect
+   fun:main
+}
