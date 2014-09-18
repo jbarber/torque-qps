@@ -15,6 +15,7 @@ class Attribute {
         std::string resource;
         std::string value;
         std::string dottedname();
+        Attribute();
         Attribute(struct attrl *a);
         Attribute(std::string, std::string, std::string);
         Attribute(const Attribute &);

@@ -13,10 +13,16 @@ extern "C" {
     #include <pbs_ifl.h>
 }
 
+Attribute::Attribute () {
+    name     = "";
+    resource = "";
+    value    = "";
+}
+
 Attribute::Attribute (std::string name, std::string resource, std::string value) {
-    name = name;
+    name     = name;
     resource = resource;
-    value = value;
+    value    = value;
 }
 
 Attribute::Attribute (const Attribute &a) {
@@ -245,7 +251,9 @@ std::string string_format(const std::string &fmt, ...) {
     }
 }
 
-// FIXME: This is broken for jobs that don't have the same attributes in the same order
+// FIXME: This is broken for jobs that don't have the same attributes in
+// the same order, e.g. displaying interactive jobs and non-interactive
+// jobs
 std::string qstat_out (std::vector<BatchStatus> jobs) {
     std::string output = "";
     std::string id = "Job id";
@@ -506,8 +514,8 @@ TEST(line, SingleLine) {
 
 class AttributeTest : public ::testing::Test {
     protected:
-        Attribute attribute = Attribute("", "", "");
-        Attribute noresource = Attribute("", "", "");
+        Attribute attribute;
+        Attribute noresource;
         virtual void SetUp() {
             attribute.name     = "name";
             attribute.value    = "value";
