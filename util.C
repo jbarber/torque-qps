@@ -97,6 +97,12 @@ Filter::Filter (std::string filter) {
     value     = filter.substr(offset + winner.length());
 }
 
+inline bool operator==(const Filter& lhs, const Filter& rhs) {
+    return lhs.attribute == rhs.attribute &&
+        lhs.op == rhs.op &&
+        lhs.value == rhs.value;
+}
+
 // TODO: Can this be replaced with a constructor?
 std::vector<BatchStatus> bs2BatchStatus (struct batch_status *bs) {
     std::vector<BatchStatus> status;
@@ -314,39 +320,33 @@ std::string qstat_out (std::vector<BatchStatus> jobs) {
 }
 
 // From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
-void tokenize(const std::string &str, std::set<std::string>& tokens, const std::string& delimiters = " ") {
+std::set<std::string> tokenize(std::string str, std::string delimiters = " ") {
+    std::set<std::string> tokens;
+
     // Skip delimiters at beginning.
     std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
     // Find first "non-delimiter".
     std::string::size_type pos     = str.find_first_of(delimiters, lastPos);
 
     while (std::string::npos != pos || std::string::npos != lastPos) {
-        // Found a token, add it to the vector.
+        // Found a token, add it to the set
         tokens.insert(str.substr(lastPos, pos - lastPos));
+
         // Skip delimiters.  Note the "not_of"
         lastPos = str.find_first_not_of(delimiters, pos);
         // Find next "non-delimiter"
         pos = str.find_first_of(delimiters, lastPos);
     }
+    return tokens;
 }
 
 Config::Config (int argc, char **argv) {
-    outstyle = Config::DEFAULT;
-    output   = "Job_Name,Job_Owner,resources_used,job_state,queue";
-    help     = false;
-
-/*
-    cfg->filters  = NULL;
-    cfg->server   = NULL;
-    cfg->output   = NULL;
-    cfg->outattr  = NULL;
-    cfg->list     = 0;
-    cfg->outstyle = Config::DEFAULT;
-*/
+    outstyle           = Config::DEFAULT;
+    help               = false;
+    std::string output = "Job_Name,Job_Owner,resources_used,job_state,queue";
 
     int opt;
     std::string outformat, filter_str;
-
     while ((opt = getopt(argc, argv, "hs:o:a:f:")) != -1) {
         switch (opt) {
             case 'h':
@@ -369,7 +369,7 @@ Config::Config (int argc, char **argv) {
 
     if (optind != argc) {
         for (int i = optind; i < argc; i++) {
-            jobs.push_back(argv[i]);
+            jobs.push_back(std::string(argv[i]));
         }
     }
 
@@ -388,13 +388,12 @@ Config::Config (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    std::set<std::string> l_filters;
-    tokenize(filter_str, l_filters, ",");
+    auto l_filters = tokenize(filter_str, ",");
     for (auto i = l_filters.begin(); i != l_filters.end(); ++i) {
         filters.push_back(Filter(*i));
     }
 
-    tokenize(output, outattr, ",");
+    outattr = tokenize(output, ",");
 }
 
 BatchStatus BatchStatus::SelectAttributes(std::set<std::string> attr) {
@@ -469,8 +468,51 @@ std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Fi
 
 #ifdef TESTING
 #include <gtest/gtest.h>
+#include <algorithm>
 using ::testing::InitGoogleTest;
 using namespace std;
+
+TEST(Filter, constructor) {
+    Filter f = Filter("name=filter");
+    EXPECT_EQ(f.attribute, "name");
+    EXPECT_EQ(f.op,        Filter::EQ);
+    EXPECT_EQ(f.value,     "filter");
+}
+
+TEST(Filter, constructorTwo) {
+    Filter f = Filter("name=fil>=ter");
+    EXPECT_EQ(f.attribute, "name");
+    EXPECT_EQ(f.op,        Filter::EQ);
+    EXPECT_EQ(f.value,     "fil>=ter");
+}
+
+TEST(Filter, equality) {
+    Filter f = Filter("name=filter");
+    Filter g = Filter("name=filter");
+    EXPECT_EQ(f, g);
+}
+
+TEST(Config, Parsing) {
+    Filter f = Filter("foo=bar");
+    char *args[] = { "prog",
+        "-a", "foo",
+        "-s", "pbs.example.com",
+        "-o", "perl",
+        "-h",
+        "-f", "foo=bar",
+        "123",
+    };
+
+    Config c = Config(11, args);
+
+    EXPECT_EQ(c.help, true);
+    EXPECT_EQ(c.server, "pbs.example.com");
+    EXPECT_EQ(c.outattr.count("foo"), 1);
+    EXPECT_EQ(c.filters[0], f);
+    auto res = std::find(std::begin(c.jobs), std::end(c.jobs), "123");
+    EXPECT_NE(res, std::end(c.jobs));
+    EXPECT_EQ(c.outstyle, Config::PERL);
+}
 
 TEST(xml_escape, NoSpecial) {
     EXPECT_EQ(xml_escape("foo"), "foo");
@@ -543,6 +585,21 @@ class BatchStatusTest : public ::testing::Test {
         std::vector<BatchStatus> attributes;
         std::vector<string> queries;
 };
+
+TEST(tokenize, firsttoken) {
+    auto res = tokenize("foo bar");
+    EXPECT_EQ(res.count("foo"), 1);
+}
+
+TEST(tokenize, secondtoken) {
+    auto res = tokenize("foo bar");
+    EXPECT_EQ(res.count("bar"), 1);
+}
+
+TEST(tokenize, notoken) {
+    auto res = tokenize("foobar");
+    EXPECT_EQ(res.count("bar"), 0);
+}
 
 TEST_F(AttributeTest, Equality) {
     EXPECT_EQ(attribute, attribute);

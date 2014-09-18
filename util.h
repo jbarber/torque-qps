@@ -27,6 +27,7 @@ class Filter {
         enum Symbol { AND, OR, EQ, NE, GE, GT, LE, LT };
         Symbol op;
         std::string value;
+
         Filter (std::string);
 };
 
@@ -34,7 +35,6 @@ class Config {
     public:
         bool help;
         std::string server;
-        std::string output;
         std::set<std::string> outattr;
         std::vector<Filter> filters;
         std::vector<std::string> jobs;
