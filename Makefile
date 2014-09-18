@@ -11,18 +11,22 @@ CXXFLAGS=--std=c++0x -I/usr/include/torque -g ${VERSION} -Wall
 all: qps qps.1
 
 testsuite: LDLIBS+=-lgtest
-testsuite: CXXFLAGS+=-DTESTING
+testsuite: LDFLAGS+=-lgcov
+testsuite: CXXFLAGS+=-DTESTING -fprofile-arcs -ftest-coverage
 testsuite: util.C
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 tests: testsuite
 	@./$^
 
+util.C.gcov: util.C
+	gcov -r ./$^
+
 valgrind: testsuite
 	valgrind --leak-check=full --suppressions=valgrind.sup ./$^
 
 clean:
-	rm -rf qps qps.1 qps-*.tar.gz testsuite *.o
+	rm -rf qps qps.1 qps-*.tar.gz testsuite *.o *.gcov *.gcda *.gcno
 
 qps: qps.C util.C
 
