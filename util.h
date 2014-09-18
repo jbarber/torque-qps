@@ -49,6 +49,8 @@ class BatchStatus {
         std::vector<Attribute> attributes;
         BatchStatus(struct batch_status *);
         BatchStatus(std::string, std::string);
+
+        BatchStatus SelectAttributes(std::set<std::string>);
 };
 
 bool test (Attribute, Filter);

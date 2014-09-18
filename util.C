@@ -31,6 +31,16 @@ Attribute::Attribute (struct attrl *a) {
     value.assign(a->value == NULL ? "" : a->value);
 }
 
+inline bool operator==(const Attribute& lhs, const Attribute& rhs) {
+    return lhs.name == rhs.name &&
+        lhs.resource == rhs.resource &&
+        lhs.value == rhs.value;
+}
+
+inline bool operator!=(const Attribute& lhs, const Attribute& rhs) {
+    return ! (lhs == rhs);
+}
+
 std::string Attribute::dottedname () {
     return name + (resource == "" ? "" : "." + resource);
 }
@@ -379,24 +389,37 @@ Config::Config (int argc, char **argv) {
     tokenize(output, outattr, ",");
 }
 
+BatchStatus BatchStatus::SelectAttributes(std::set<std::string> attr) {
+    auto filtered = BatchStatus(name, text);
+
+    bool all = (attr.find("all") != attr.end());
+
+    for (auto j = attributes.begin(); j != attributes.end(); ++j) {
+        if (all || attr.find(j->name) != attr.end()) {
+            filtered.attributes.push_back(Attribute(*j));
+        }
+    }
+
+    return filtered;
+}
+
+inline bool operator==(const BatchStatus& lhs, const BatchStatus& rhs) {
+    if (lhs.name == rhs.name &&
+        lhs.text == rhs.text &&
+        lhs.attributes == rhs.attributes
+    ) {
+        return true;
+    }
+    return false;
+}
+
 // Return a new std::vector<BatchStatus> with the same jobs as s with only
 // the attributes specified by attr
 std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus> s, std::set<std::string> attr) {
     std::vector<BatchStatus> filtered;
 
-    bool all = false;
-    if (attr.find("all") != attr.end()) {
-        all = true;
-    }
-
     for (auto i = s.begin(); i != s.end(); ++i) {
-        auto bs = BatchStatus(i->name, i->text);
-
-        for (auto j = i->attributes.begin(); j != i->attributes.end(); ++j) {
-            if (all || attr.find(j->name) != attr.end()) {
-                bs.attributes.push_back(Attribute(*j));
-            }
-        }
+        auto bs = i->SelectAttributes(attr);
         filtered.push_back(bs);
     }
 
@@ -481,17 +504,60 @@ TEST(line, SingleLine) {
     EXPECT_EQ(line(1), "-");
 }
 
+class AttributeTest : public ::testing::Test {
+    protected:
+        Attribute attribute = Attribute("", "", "");
+        Attribute noresource = Attribute("", "", "");
+        virtual void SetUp() {
+            attribute.name     = "name";
+            attribute.value    = "value";
+            attribute.resource = "resource";
+
+            noresource.name     = "name";
+            noresource.value    = "value";
+            noresource.resource = "";
+        }
+};
+
 class BatchStatusTest : public ::testing::Test {
     protected:
         virtual void SetUp() {
             BatchStatus job = BatchStatus("1234.example.com", "");
-
             onejob.push_back(job);
+
+            BatchStatus jobAttr = BatchStatus("1234.example.com", "");
+            jobAttr.attributes.push_back(Attribute("foo", "", "foovalue"));
+            jobAttr.attributes.push_back(Attribute("moo", "", "moovalue"));
+            attributes.push_back(jobAttr);
         }
         std::vector<BatchStatus> empty;
         std::vector<BatchStatus> onejob;
+        std::vector<BatchStatus> attributes;
         std::vector<string> queries;
 };
+
+TEST_F(AttributeTest, Equality) {
+    EXPECT_EQ(attribute, attribute);
+}
+
+TEST_F(AttributeTest, Copy) {
+    auto copy = Attribute(attribute);
+    EXPECT_EQ(attribute, copy);
+
+    copy.name = "";
+    EXPECT_NE(attribute, copy);
+}
+
+TEST_F(AttributeTest, DottedName) {
+    EXPECT_EQ(attribute.dottedname(), "name.resource");
+    EXPECT_EQ(noresource.dottedname(), "name");
+}
+
+TEST_F(BatchStatusTest, SelectAttributes) {
+    std::set<std::string> query = std::set<std::string>();
+    query.insert("all");
+    EXPECT_EQ(filter_attributes(attributes, query), attributes);
+}
 
 TEST_F(BatchStatusTest, xml_out) {
         EXPECT_EQ(xml_out(empty), "<Data></Data>");
