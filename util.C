@@ -165,18 +165,18 @@ std::string xml_escape (std::string input) {
     return output;
 }
 
-std::string xml_out (std::vector<BatchStatus> jobs) {
+std::string xml_out (std::vector<BatchStatus> jobs, std::string collection, std::string id) {
     std::string output = "<Data>";
     for (decltype(jobs.size()) i = 0; i < jobs.size(); i++) {
         auto job = jobs[i];
-        output += "<Job>";
-        output += "<JobId>" + xml_escape(job.name) + "</JobId>";
+        output += "<" + collection + ">";
+        output += "<" + id + ">" + xml_escape(job.name) + "</" + id + ">";
 
         for (decltype(job.attributes.size()) j = 0; j < job.attributes.size(); j++) {
             auto a = job.attributes[j];
             output += "<" + a.dottedname() + ">" + xml_escape(a.value) + "</" + a.dottedname() + ">";
         }
-        output += "</Job>";
+        output += "</" + collection + ">";
     }
 
     output += "</Data>";
@@ -342,12 +342,14 @@ std::set<std::string> tokenize(std::string str, std::string delimiters = " ") {
 
 Config::Config (int argc, char **argv) {
     outstyle           = Config::DEFAULT;
+    query              = Config::JOBS;
+
     help               = false;
     std::string output = "Job_Name,Job_Owner,resources_used,job_state,queue";
 
     int opt;
-    std::string outformat, filter_str;
-    while ((opt = getopt(argc, argv, "hs:o:a:f:")) != -1) {
+    std::string outformat, filter_str, type;
+    while ((opt = getopt(argc, argv, "hs:o:a:f:t:")) != -1) {
         switch (opt) {
             case 'h':
                 help = true;
@@ -363,6 +365,9 @@ Config::Config (int argc, char **argv) {
                 break;
             case 'f':
                 filter_str.assign(optarg);
+                break;
+            case 't':
+                type.assign(optarg);
                 break;
         }
     }
@@ -385,6 +390,19 @@ Config::Config (int argc, char **argv) {
         outstyle = Config::QSTAT;
     } else {
         cout << "Unknown output format: " + outformat << endl;
+        exit(EXIT_FAILURE);
+    }
+
+    if (type == "" || type == "jobs") {
+        query = Config::JOBS;
+    } else if (type == "nodes") {
+        query = Config::NODES;
+    } else if (type == "queues") {
+        query = Config::QUEUES;
+    } else if (type == "servers") {
+        query = Config::SERVERS;
+    } else {
+        cout << "Unknown query type: " + type << endl;
         exit(EXIT_FAILURE);
     }
 
@@ -625,7 +643,7 @@ TEST_F(BatchStatusTest, SelectAttributes) {
 }
 
 TEST_F(BatchStatusTest, xml_out) {
-        EXPECT_EQ(xml_out(empty), "<Data></Data>");
+        EXPECT_EQ(xml_out(empty, "Job", "JobId"), "<Data></Data>");
 }
 
 TEST_F(BatchStatusTest, json_out) {

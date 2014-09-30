@@ -10,20 +10,23 @@ Features are:
 * One-row per job output - make it easy to grep for relevent jobs
 * JSON + XML output
 * qstat-like output - but columns are sized to not truncate the data
+* query the status of jobs, nodes, queues and servers with the same interface
 
 USAGE
 =====
 
-    qps, built from 232e91b
-
-    usage: ./qps [-h] [-s server] [-o xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo]
-
+    qps, built from e25d268
+    
+    usage: ./qps [-h] [-s server] [-t jobs|nodes|queues|servers] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]
+    
       h : show help
       s : server to connect to
-      o : output format (xml|perl|qstat|json)
+      o : output format, default is indent
       a : job attributes to display ('all' for all attributes)
       f : attributes=value to filter jobs (e.g. -f job_state=R)
-
+      t : type of query, default is jobs
+    
+      When jobids are given, only these jobs are filtered by the -f argument
 
 FILTERS
 =======
@@ -57,8 +60,5 @@ TODO
   * Show jobs from all users apart from "foo"
   * Show jobs from all users matching the pattern 'foo.*'
   * Show jobs with a walltime of more than 10 hours
-* Show status of queues and servers?
-* Output should be more attractive - for example, at the moment the interactive
-  field prints as (null) if it's not set to True by libtorque. This is not safe
-  and the (null) should be tested for and printed as "False"
-* JSON output should not quote non-string data types (e.g. true/false/numbers)
+* qstat output is broken when some jobs have fields not present in others (e.g. interactive)
+* JSON/Perl output should not quote non-string data types (e.g. true/false/numbers)

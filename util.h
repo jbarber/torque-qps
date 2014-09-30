@@ -38,8 +38,10 @@ class Config {
         std::set<std::string> outattr;
         std::vector<Filter> filters;
         std::vector<std::string> jobs;
-        enum   Output { DEFAULT, XML, JSON, QSTAT, PERL };
+        enum Output { DEFAULT, XML, JSON, QSTAT, PERL };
+        enum Query { JOBS, NODES, QUEUES, SERVERS };
         Output outstyle;
+        Query query;
         Config (int, char **);
 };
 
@@ -59,7 +61,7 @@ std::vector<BatchStatus> bs2BatchStatus (struct batch_status *);
 std::vector<BatchStatus> select_jobs (std::vector<BatchStatus>, std::vector<std::string>);
 std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus>, std::vector<Filter>);
 std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus>, std::set<std::string>);
-std::string xml_out (std::vector<BatchStatus>);
+std::string xml_out (std::vector<BatchStatus>, std::string, std::string);
 std::string json_out (std::vector<BatchStatus>, std::string);
 std::string txt_out (std::vector<BatchStatus>);
 std::string qstat_out (std::vector<BatchStatus>);

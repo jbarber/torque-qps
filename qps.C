@@ -10,7 +10,7 @@ extern "C" {
 static char *progname;
 
 void show_usage() {
-    fprintf(stderr, "usage: %s [-h] [-s server] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]\n", progname);
+    fprintf(stderr, "usage: %s [-h] [-s server] [-t jobs|nodes|queues|servers] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]\n", progname);
 }
 
 void show_help () {
@@ -19,9 +19,10 @@ void show_help () {
     fprintf(stderr, "\n");
     fprintf(stderr, "  h : show help\n");
     fprintf(stderr, "  s : server to connect to\n");
-    fprintf(stderr, "  o : output format (xml|perl|qstat|json)\n");
+    fprintf(stderr, "  o : output format, default is indent\n");
     fprintf(stderr, "  a : job attributes to display ('all' for all attributes)\n");
     fprintf(stderr, "  f : attributes=value to filter jobs (e.g. -f job_state=R)\n");
+    fprintf(stderr, "  t : type of query, default is jobs\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  When jobids are given, only these jobs are filtered by the -f argument\n");
 }
@@ -51,7 +52,30 @@ int main (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    auto bs = pbs_statjob(h, (char *) "", NULL, (char *) "");
+    struct batch_status *bs;
+    std::vector<std::string> xml_tags = { "", "" };
+    switch (cfg.query) {
+        case Config::JOBS:
+            bs = pbs_statjob(h, (char *) "", NULL, (char *) "");
+            xml_tags = { "Job", "JobId" };
+            break;
+        case Config::NODES:
+            bs = pbs_statnode(h, (char *) "", NULL, (char *) "");
+            xml_tags = { "Node", "name" };
+            break;
+        case Config::QUEUES:
+            bs = pbs_statque(h, (char *) "", NULL, (char *) "");
+            xml_tags = { "Queue", "name" };
+            break;
+        case Config::SERVERS:
+            bs = pbs_statque(h, (char *) "", NULL, (char *) "");
+            xml_tags = { "Server", "name" };
+            break;
+        default:
+            cout << "Unknown query type" << endl;
+            exit(EXIT_FAILURE);
+    }
+
     if (bs == NULL) {
         pbs_disconnect(h);
         // FIXME: This can mean either that we failed to get any jobs, or that
@@ -80,7 +104,7 @@ int main (int argc, char **argv) {
 
     switch (cfg.outstyle) {
         case Config::XML:
-            cout << xml_out(finaljobs);
+            cout << xml_out(finaljobs, xml_tags[0], xml_tags[1]);
             break;
         case Config::JSON:
             cout << json_out(finaljobs, ":");
