@@ -450,13 +450,13 @@ std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus> s, std::set
     return filtered;
 }
 
-std::vector<BatchStatus> select_jobs (std::vector<BatchStatus> s, std::vector<std::string> jobids) {
+std::vector<BatchStatus> select_jobs (std::vector<BatchStatus> s, std::vector<std::string> jobids, bool adddot) {
     std::vector<BatchStatus> filtered;
 
     for (auto i = s.begin(); i != s.end(); ++i) {
         for (unsigned int j = 0; j < jobids.size(); ++j) {
             auto query = jobids[j];
-            if (query.find(".", 0) == std::string::npos)
+            if (adddot && query.find(".", 0) == std::string::npos)
                 query += ".";
 
             if (i->name.find(query, 0) == 0)
@@ -659,45 +659,45 @@ TEST_F(BatchStatusTest, txt_out) {
 
 TEST_F(BatchStatusTest, NoJobs) {
     queries.push_back("123");
-    EXPECT_EQ(select_jobs(empty, queries).size(), 0);
+    EXPECT_EQ(select_jobs(empty, queries, true).size(), 0);
 }
 
 TEST_F(BatchStatusTest, NoJobsNoQuery) {
-    EXPECT_EQ(select_jobs(empty, queries).size(), 0);
+    EXPECT_EQ(select_jobs(empty, queries, true).size(), 0);
 }
 
 TEST_F(BatchStatusTest, JobsNoQuery) {
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 0);
 }
 
 TEST_F(BatchStatusTest, NoMatch) {
     queries.push_back("123");
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 0);
 }
 
 TEST_F(BatchStatusTest, NoMatchPeriod) {
     queries.push_back("123.");
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 0);
 }
 
 TEST_F(BatchStatusTest, NoMatchSubstring) {
     queries.push_back("234");
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 0);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 0);
 }
 
 TEST_F(BatchStatusTest, Match) {
     queries.push_back("1234");
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 1);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 1);
 }
 
 TEST_F(BatchStatusTest, MatchPeriod) {
     queries.push_back("1234.");
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 1);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 1);
 }
 
 TEST_F(BatchStatusTest, MatchFull) {
     queries.push_back("1234.example.com");
-    EXPECT_EQ(select_jobs(onejob, queries).size(), 1);
+    EXPECT_EQ(select_jobs(onejob, queries, true).size(), 1);
 }
 
 int main(int argc, char **argv) {

@@ -58,7 +58,7 @@ class BatchStatus {
 
 bool test (Attribute, Filter);
 std::vector<BatchStatus> bs2BatchStatus (struct batch_status *);
-std::vector<BatchStatus> select_jobs (std::vector<BatchStatus>, std::vector<std::string>);
+std::vector<BatchStatus> select_jobs (std::vector<BatchStatus>, std::vector<std::string>, bool);
 std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus>, std::vector<Filter>);
 std::vector<BatchStatus> filter_attributes (std::vector<BatchStatus>, std::set<std::string>);
 std::string xml_out (std::vector<BatchStatus>, std::string, std::string);

@@ -91,7 +91,8 @@ int main (int argc, char **argv) {
     // FIXME: Really this should be done with the same filtering logic as
     // filter_jobs(), but filter_jobs() doesn't do the job yet
     if (cfg.jobs.size()) {
-        filtered = select_jobs(jobs, cfg.jobs);
+        bool adddot = (cfg.query == Config::JOBS || cfg.query == Config::NODES);
+        filtered = select_jobs(jobs, cfg.jobs, adddot);
     }
     else {
         filtered = jobs;
