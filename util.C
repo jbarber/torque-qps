@@ -11,6 +11,8 @@ extern "C" {
     #include <getopt.h>
     #include <pbs_error.h>
     #include <pbs_ifl.h>
+    #include <stdarg.h>
+    #include <assert.h>
 }
 
 Attribute::Attribute () {
@@ -238,23 +240,20 @@ std::string txt_out (std::vector<BatchStatus> jobs) {
     return output;
 }
 
-// https://stackoverflow.com/a/8362718
+// Derived from https://stackoverflow.com/a/8362718
 std::string string_format(const std::string &fmt, ...) {
-    int size=100;
-    std::string str;
-    va_list ap;
-    while (1) {
-        str.resize(size);
-        va_start(ap, fmt);
-        int n = vsnprintf((char *)str.c_str(), size, fmt.c_str(), ap);
-        va_end(ap);
-        if (n > -1 && n < size)
-            return str;
-        if (n > -1)
-            size=n+1;
-        else
-            size*=2;
-    }
+    va_list ap1, ap2;
+
+    va_start(ap1, fmt);
+    va_copy(ap2, ap1);
+    int size = vsnprintf(NULL, 0, fmt.c_str(), ap1);
+    va_end(ap1);
+
+    std::string str = std::string(size, 0x0);
+    assert(size == vsprintf((char *)str.c_str(), fmt.c_str(), ap2));
+    va_end(ap2);
+
+    return str;
 }
 
 // FIXME: This is broken for jobs that don't have the same attributes in
