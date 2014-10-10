@@ -42,6 +42,8 @@ class Config {
         enum Query { JOBS, NODES, QUEUES, SERVERS };
         Output outstyle;
         Query query;
+        unsigned long int count;
+        bool countSet;
         Config (int, char **);
 };
 

@@ -12,7 +12,7 @@ all: qps qps.1
 
 testsuite: LDLIBS+=-lgtest
 testsuite: LDFLAGS+=-lgcov
-testsuite: CXXFLAGS+=-DTESTING -fprofile-arcs -ftest-coverage
+testsuite: CXXFLAGS+=-DTESTING -fprofile-arcs -ftest-coverage -Wextra -pedantic-errors
 testsuite: util.C
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ $(LDLIBS) -o $@
 

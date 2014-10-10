@@ -1,5 +1,5 @@
 Name:		qps
-Version:	0.2.2
+Version:	0.2.3
 Release:	1%{?dist}
 Summary:	Alternative to qstat for the Torque resource manager
 
@@ -40,6 +40,9 @@ make install DESTDIR=%{buildroot}
 %doc %{_mandir}/man1/qps.1*
 
 %changelog
+* Fri Oct 10 2014 Jonathan Barber <jonathan.barber@gmail.com> 0.2.3-1
+- Add option (-m) to limit number of results shown
+
 * Tue Sep 30 2014 Jonathan Barber <jonathan.barber@gmail.com> 0.2.2-1
 - Now can query queues/servers/nodes/jobs
 

@@ -13,6 +13,8 @@ extern "C" {
     #include <pbs_ifl.h>
     #include <stdarg.h>
     #include <assert.h>
+    #include <errno.h>
+    #include <limits.h>
 }
 
 Attribute::Attribute () {
@@ -340,6 +342,8 @@ std::set<std::string> tokenize(std::string str, std::string delimiters = " ") {
 }
 
 Config::Config (int argc, char **argv) {
+    count              = 0;
+    countSet           = false;
     outstyle           = Config::DEFAULT;
     query              = Config::JOBS;
 
@@ -348,7 +352,7 @@ Config::Config (int argc, char **argv) {
 
     int opt;
     std::string outformat, filter_str, type;
-    while ((opt = getopt(argc, argv, "hs:o:a:f:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "hs:o:a:f:t:m:")) != -1) {
         switch (opt) {
             case 'h':
                 help = true;
@@ -367,6 +371,20 @@ Config::Config (int argc, char **argv) {
                 break;
             case 't':
                 type.assign(optarg);
+                break;
+            case 'm':
+                errno = 0;
+                long int tmp = strtol(optarg, NULL, 10);
+                if ((errno == ERANGE && (tmp == LONG_MAX || tmp == LONG_MIN)) || (errno != 0 && tmp == 0)) {
+                    cout << "Couldn't convert " << optarg << " to an integer" << endl;
+                    exit(EXIT_FAILURE);
+                }
+                if (tmp < 0) {
+                    cout << "argument to -m must be >= 0" << endl;
+                    exit(EXIT_FAILURE);
+                }
+                count = (unsigned long int) tmp;
+                countSet = true;
                 break;
         }
     }
@@ -511,24 +529,32 @@ TEST(Filter, equality) {
 
 TEST(Config, Parsing) {
     Filter f = Filter("foo=bar");
-    char *args[] = { "prog",
-        "-a", "foo",
+
+#define LEN 15
+    char *args[LEN] = {
+        "progname",
+        "-h",
         "-s", "pbs.example.com",
         "-o", "perl",
-        "-h",
+        "-a", "foo",
         "-f", "foo=bar",
+        "-t", "nodes",
+        "-m", "1",
         "123",
     };
 
-    Config c = Config(11, args);
+    Config c = Config(LEN, args);
 
     EXPECT_EQ(c.help, true);
     EXPECT_EQ(c.server, "pbs.example.com");
+    EXPECT_EQ(c.outstyle, Config::PERL);
     EXPECT_EQ(c.outattr.count("foo"), 1);
     EXPECT_EQ(c.filters[0], f);
+    EXPECT_EQ(c.query, Config::NODES);
+    EXPECT_EQ(c.count, 1);
+    EXPECT_EQ(c.countSet, true);
     auto res = std::find(std::begin(c.jobs), std::end(c.jobs), "123");
     EXPECT_NE(res, std::end(c.jobs));
-    EXPECT_EQ(c.outstyle, Config::PERL);
 }
 
 TEST(xml_escape, NoSpecial) {

@@ -10,7 +10,7 @@ extern "C" {
 static char *progname;
 
 void show_usage() {
-    fprintf(stderr, "usage: %s [-h] [-s server] [-t jobs|nodes|queues|servers] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]\n", progname);
+    fprintf(stderr, "usage: %s [-h] [-s server] [-t jobs|nodes|queues|servers] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [-m ...] [jobid1 jobid2 ...]\n", progname);
 }
 
 void show_help () {
@@ -23,6 +23,7 @@ void show_help () {
     fprintf(stderr, "  a : job attributes to display ('all' for all attributes)\n");
     fprintf(stderr, "  f : attributes=value to filter jobs (e.g. -f job_state=R)\n");
     fprintf(stderr, "  t : type of query, default is jobs\n");
+    fprintf(stderr, "  m : number of records to display, defaults to all records\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "  When jobids are given, only these jobs are filtered by the -f argument\n");
 }
@@ -98,10 +99,19 @@ int main (int argc, char **argv) {
         filtered = jobs;
     }
 
-    if (cfg.filters.size()) {
-        filtered = filter_jobs(filtered, cfg.filters);
+    std::vector<BatchStatus> selected;
+    if (cfg.countSet) {
+        auto max = filtered.size() > cfg.count ? cfg.count : filtered.size();
+        selected = std::vector<BatchStatus>(filtered.begin(), filtered.begin() + max);
     }
-    auto finaljobs = filter_attributes(filtered, cfg.outattr);
+    else {
+        selected = filtered;
+    }
+
+    if (cfg.filters.size()) {
+        filtered = filter_jobs(selected, cfg.filters);
+    }
+    auto finaljobs = filter_attributes(selected, cfg.outattr);
 
     switch (cfg.outstyle) {
         case Config::XML:

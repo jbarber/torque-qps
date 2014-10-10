@@ -15,9 +15,9 @@ Features are:
 USAGE
 =====
 
-    qps, built from e25d268
+    qps, built from 130ff9b
     
-    usage: ./qps [-h] [-s server] [-t jobs|nodes|queues|servers] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [jobid1 jobid2 ...]
+    usage: ./qps [-h] [-s server] [-t jobs|nodes|queues|servers] [-o indent|xml|json|perl|qstat] [-a attr1,attr2] [-f attr3=foo] [-m ...] [jobid1 jobid2 ...]
     
       h : show help
       s : server to connect to
@@ -25,6 +25,7 @@ USAGE
       a : job attributes to display ('all' for all attributes)
       f : attributes=value to filter jobs (e.g. -f job_state=R)
       t : type of query, default is jobs
+      m : number of records to display, defaults to all records
     
       When jobids are given, only these jobs are filtered by the -f argument
 
