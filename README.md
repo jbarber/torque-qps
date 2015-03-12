@@ -1,5 +1,8 @@
 qps
 ===
+
+[![Travis status](https://travis-ci.org/jbarber/torque-qps.svg?branch=master)](https://travis-ci.org/jbarber/torque-qps)
+
 Like Torque's [qstat](http://docs.adaptivecomputing.com/torque/4-2-6/help.htm#topics/commands/qstat.htm), but better (for given values of better).
 
 Shows the status of cluster jobs in a similar fashion to the way "ps" does for
