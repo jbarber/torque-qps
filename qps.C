@@ -111,7 +111,7 @@ int main (int argc, char **argv) {
     if (cfg.filters.size()) {
         filtered = filter_jobs(selected, cfg.filters);
     }
-    auto finaljobs = filter_attributes(selected, cfg.outattr);
+    auto finaljobs = filter_attributes(filtered, cfg.outattr);
 
     switch (cfg.outstyle) {
         case Config::XML:

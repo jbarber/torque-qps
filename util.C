@@ -527,6 +527,31 @@ TEST(Filter, equality) {
     EXPECT_EQ(f, g);
 }
 
+TEST(Filter, reallyfilter) {
+    Filter f = Filter("foo=foovalue");
+    std::vector<Filter> hit;
+    hit.push_back(f);
+
+    Filter fail = Filter("foo=bar");
+    std::vector<Filter> miss;
+    miss.push_back(fail);
+
+    BatchStatus jobAttr = BatchStatus("1234.example.com", "");
+    Attribute attr;
+    attr.name = "foo";
+    attr.value = "foovalue";
+    jobAttr.attributes.push_back(attr);
+
+    std::vector<BatchStatus> attributes;
+    attributes.push_back(jobAttr);
+
+    auto hit_filter = filter_jobs(attributes, hit);
+    EXPECT_EQ(hit_filter.size(), 1);
+
+    auto miss_filter = filter_jobs(attributes, miss);
+    EXPECT_EQ(miss_filter.size(), 0);
+}
+
 TEST(Config, Parsing) {
     Filter f = Filter("foo=bar");
 
