@@ -16,6 +16,7 @@ extern "C" {
     #include <assert.h>
     #include <errno.h>
     #include <limits.h>
+    #include <fnmatch.h>
 }
 
 Attribute::Attribute () {
@@ -65,10 +66,10 @@ std::string Attribute::dottedname () {
 bool test (Attribute attribute, Filter filter) {
     switch (filter.op) {
         case Filter::EQ:
-            return attribute.value == filter.value;
+            return fnmatch(filter.value.c_str(), attribute.value.c_str(), FNM_CASEFOLD) != FNM_NOMATCH;
             break;
         case Filter::NE:
-            return attribute.value != filter.value;
+            return fnmatch(filter.value.c_str(), attribute.value.c_str(), FNM_CASEFOLD) == FNM_NOMATCH;
             break;
         default:
             cout << "Not yet supported";
@@ -544,6 +545,8 @@ TEST(Filter, reallyfilter) {
     std::vector<Filter> hit       = { Filter("foo=foovalue") };
     std::vector<Filter> miss      = { Filter("foo=bar") };
     std::vector<Filter> test_case = { Filter("FOO=foovalue") };
+    std::vector<Filter> wildcard  = { Filter("foo=fo*ue") };
+    std::vector<Filter> wildcard_escape  = { Filter("foo=fo\\*ue") };
 
     BatchStatus jobAttr = BatchStatus("1234.example.com", "");
     jobAttr.attributes.push_back(Attribute("foo", "", "foovalue"));
@@ -557,6 +560,12 @@ TEST(Filter, reallyfilter) {
 
     auto miss_filter = filter_jobs(attributes, miss);
     EXPECT_EQ(miss_filter.size(), 0);
+
+    auto wildcard_filter = filter_jobs(attributes, wildcard);
+    EXPECT_EQ(wildcard_filter.size(), 1);
+
+    auto wildcard_escape_f = filter_jobs(attributes, wildcard_escape);
+    EXPECT_EQ(wildcard_escape_f.size(), 0);
 }
 
 TEST(Config, Parsing) {
