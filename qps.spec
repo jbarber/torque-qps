@@ -1,5 +1,5 @@
 Name:		qps
-Version:	0.2.3
+Version:	0.2.4
 Release:	1%{?dist}
 Summary:	Alternative to qstat for the Torque resource manager
 

@@ -33,7 +33,7 @@ qps: qps.C util.C
 qps.1: qps.1.pod
 	pod2man $< > $@
 
-TARVERSION=0.2.2
+TARVERSION=0.2.4
 TARBALL=qps-${TARVERSION}.tar.gz
 
 ${TARBALL}:
