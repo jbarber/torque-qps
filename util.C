@@ -4,6 +4,7 @@
 #include <map>
 #include <iostream>
 #include <cstdarg>
+#include <algorithm>
 #include "util.h"
 using namespace std;
 
@@ -484,13 +485,19 @@ std::vector<BatchStatus> select_jobs (std::vector<BatchStatus> s, std::vector<st
     return filtered;
 }
 
+std::string _my_lower(std::string s) {
+    std::string l = s;
+    std::transform(l.begin(), l.end(), l.begin(), ::tolower);
+    return l;
+}
+
 std::vector<BatchStatus> filter_jobs (std::vector<BatchStatus> s, std::vector<Filter> f) {
     std::vector<BatchStatus> filtered;
 
     for (auto i = s.begin(); i != s.end(); ++i) {
         for (auto j = i->attributes.begin(); j != i->attributes.end(); ++j) {
             for (auto k = f.begin(); k != f.end(); ++k) {
-                if (k->attribute == j->name) {
+                if (_my_lower(k->attribute) == _my_lower(j->name)) {
                     if (test(*j, *k)) {
                         filtered.push_back(*i);
                     }
@@ -528,13 +535,9 @@ TEST(Filter, equality) {
 }
 
 TEST(Filter, reallyfilter) {
-    Filter f = Filter("foo=foovalue");
-    std::vector<Filter> hit;
-    hit.push_back(f);
-
-    Filter fail = Filter("foo=bar");
-    std::vector<Filter> miss;
-    miss.push_back(fail);
+    std::vector<Filter> hit       = { Filter("foo=foovalue") };
+    std::vector<Filter> miss      = { Filter("foo=bar") };
+    std::vector<Filter> test_case = { Filter("FOO=foovalue") };
 
     BatchStatus jobAttr = BatchStatus("1234.example.com", "");
     Attribute attr;
@@ -542,11 +545,13 @@ TEST(Filter, reallyfilter) {
     attr.value = "foovalue";
     jobAttr.attributes.push_back(attr);
 
-    std::vector<BatchStatus> attributes;
-    attributes.push_back(jobAttr);
+    std::vector<BatchStatus> attributes = { jobAttr };
 
     auto hit_filter = filter_jobs(attributes, hit);
     EXPECT_EQ(hit_filter.size(), 1);
+
+    auto case_filter = filter_jobs(attributes, test_case);
+    EXPECT_EQ(case_filter.size(), 1);
 
     auto miss_filter = filter_jobs(attributes, miss);
     EXPECT_EQ(miss_filter.size(), 0);
