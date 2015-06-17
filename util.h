@@ -18,6 +18,7 @@ class Attribute {
         Attribute();
         Attribute(struct attrl *a);
         Attribute(std::string, std::string, std::string);
+        Attribute(const char *, const char *, const char *);
         Attribute(const Attribute &);
 };
 

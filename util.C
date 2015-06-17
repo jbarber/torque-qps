@@ -24,10 +24,16 @@ Attribute::Attribute () {
     value    = "";
 }
 
-Attribute::Attribute (std::string name, std::string resource, std::string value) {
-    name     = name;
-    resource = resource;
-    value    = value;
+Attribute::Attribute (std::string n, std::string r, std::string v) {
+    name     = n;
+    resource = r;
+    value    = v;
+}
+
+Attribute::Attribute (const char *n, const char *r, const char *v) {
+    name     = std::string(n);
+    resource = std::string(r);
+    value    = std::string(v);
 }
 
 Attribute::Attribute (const Attribute &a) {
@@ -540,11 +546,7 @@ TEST(Filter, reallyfilter) {
     std::vector<Filter> test_case = { Filter("FOO=foovalue") };
 
     BatchStatus jobAttr = BatchStatus("1234.example.com", "");
-    Attribute attr;
-    attr.name = "foo";
-    attr.value = "foovalue";
-    jobAttr.attributes.push_back(attr);
-
+    jobAttr.attributes.push_back(Attribute("foo", "", "foovalue"));
     std::vector<BatchStatus> attributes = { jobAttr };
 
     auto hit_filter = filter_jobs(attributes, hit);
