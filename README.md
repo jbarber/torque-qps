@@ -12,7 +12,7 @@ Features are:
 * Selectable job attributes - only show interesting information
 * One-row per job output - make it easy to grep for relevent jobs
 * JSON + XML output
-* qstat-like output - but columns are sized to not truncate the data
+* qstat-like output - but columns are dynamically sized so as to not truncate the output
 * query the status of jobs, nodes, queues and servers with the same interface
 
 USAGE
@@ -35,14 +35,17 @@ USAGE
 FILTERS
 =======
 
-Multiple filters can be specified as attribute=value pairs, the attributes are
-equal to those listed by the -l option. Multiple filters are AND'd together to
-return the union of jobs matching the filter. At the moment only the equality
-comparison is permitted. For example, the following:
+Multiple filters can be specified as attribute=value pairs, the attribute names
+are equal to those listed by the -l option. Multiple filters are AND'd together
+to return the union of jobs matching the filter. At the moment only the
+equality (=) and inequality (!=) comparators are permitted. Wildcards are
+permitted on the left-hand-side.
 
-    qps -f name=FOO -f owner=jbarber@example.com
+For example, the following:
 
-returns all jobs owned by the user `jbarber@example.com` and called `FOO`.
+    qps -f name=FOO -f owner=jbarber@exam*.com
+
+returns all jobs called `FOO` and owned by the user `jbarber@example.com`.
 
 BUILD INSTRUCTIONS
 ==================
@@ -59,10 +62,9 @@ prerequisites simply run:
 TODO
 ====
 
-* Filtering of jobs, e.g.:
-  * Show jobs from user "foo"
-  * Show jobs from all users apart from "foo"
-  * Show jobs from all users matching the pattern 'foo.*'
-  * Show jobs with a walltime of more than 10 hours
+* More sophisticated filtering:
+  * regexes
+  * numerical comparisons
+  * more complex logical operations
 * qstat output is broken when some jobs have fields not present in others (e.g. interactive)
 * JSON/Perl output should not quote non-string data types (e.g. true/false/numbers)
